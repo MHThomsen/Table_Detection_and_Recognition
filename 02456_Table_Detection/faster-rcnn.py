@@ -264,37 +264,3 @@ for k, v in Ls_val.items():
 
 with open(output_loc+"losses val dict {}.pickle".format(model_name), "wb") as handle:
     pickle.dump(Ls_val, handle)
-
-#plotter kun hvis vi kører den fulde model. Plots kan vi altid bare lave igen alligevel
-if model_name != 'RPNresnet50':
-
-    import matplotlib.pyplot as plt
-
-    epoch = np.arange(num_epochs)
-    plt.figure()
-    plt.plot(epoch, Ls['total loss'], 'r', epoch, Ls['loss_classifier'], 'b', epoch, Ls['loss_box_reg'], 'g', epoch, Ls['loss_objectness'], 'c', epoch, Ls['loss_rpn_box_reg'], 'm')
-    plt.legend(['total loss','loss_classifier', 'loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg'])
-    plt.xlabel('Epochs')
-    plt.ylabel('Training Loss {}'.format(model_name))
-    plt.savefig(output_loc+'Training Loss {}.png'.format(model_name))
-
-
-    plt.figure()
-    plt.plot(epoch, Ls_val['total loss'], 'r', epoch, Ls_val['loss_classifier'], 'b', epoch, Ls_val['loss_box_reg'], 'g', epoch, Ls_val['loss_objectness'], 'c', epoch, Ls_val['loss_rpn_box_reg'], 'm')
-    plt.legend(['total loss','loss_classifier', 'loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg'])
-    plt.xlabel('Epochs')
-    plt.ylabel('Validation Loss {}'.format(model_name))
-    plt.savefig(output_loc+'Validation Loss {}.png'.format(model_name))
-
-
-    plt.figure()
-    plt.plot(epoch, Ls['total loss'] , 'r', epoch,Ls_val['total loss'],'b')
-    plt.legend(['Training loss','Validation loss'])
-    plt.xlabel('Epochs {}'.format(model_name))
-    plt.ylabel('Loss')
-    plt.savefig(output_loc+'Total losses {}.png'.format(model_name))
-
-
-
-#for loading model
-#https://pytorch.org/tutorials/beginner/saving_loading_models.html
