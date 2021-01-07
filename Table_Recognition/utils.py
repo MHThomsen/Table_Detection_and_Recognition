@@ -13,8 +13,13 @@ def visbility_matrix(npdf):
 
     for i,row1 in enumerate(npdf):
 
-        min_down = 10^6
-        min_right = 10^6
+        #xmin = 0
+        #ymin = 1
+        #xmax = 2
+        #ymax = 3 
+
+        min_down = 10**6
+        min_right = 10**6
         min_down_idx = None
         min_right_idx = None
 
@@ -22,12 +27,12 @@ def visbility_matrix(npdf):
             if i != j:
                 #Right neighbour
                 if row1[1] <= row2[1] <= row1[3] or row1[1] <= row2[3] <= row1[3] or row2[1] <= row1[1] <= row2[3] or row2[1] <= row1[3] <= row2[3]:
-                    if  0 < row2[0]-row1[2] <= min_right:
+                    if  0 <= row2[0]-row1[2] <= min_right:
                         min_right_idx, min_right = j, row2[0]-row1[2]
 
                 #Down neighbour
                 if row1[0] <= row2[0] <= row1[2] or row1[0] <= row2[2] <= row1[2] or row2[0] <= row1[0] <= row2[2] or row2[0] <= row1[2] <= row2[2]:
-                    if 0 < row2[1]-row1[3] <= min_down:
+                    if 0 <= row2[1]-row1[3] <= min_down:
                         min_down_idx, min_down = j, row2[1]-row1[3]
 
         if min_right_idx != None:
@@ -38,5 +43,3 @@ def visbility_matrix(npdf):
             matrix[min_down_idx, i] = 1
             
     return matrix
-
-
