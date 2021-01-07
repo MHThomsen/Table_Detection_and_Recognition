@@ -16,7 +16,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 from torchvision.transforms import functional as F
-import engine, transforms, utils, coco_eval, coco_utils
+import engine, transforms, utils
 from engine import train_one_epoch, evaluate
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
