@@ -20,8 +20,7 @@ import config
 
 
 #Load list of tfRecords from folder: 
-
-folder_path = "/Users/Morten/Desktop/DTU/DL_SpecialKursus/TIES_DataGeneration/Data_Outputs"
+folder_path = "tfrecords"
 
 #load filenames of folder: 
 tfrecord_files = os.listdir(folder_path)
@@ -78,7 +77,7 @@ plt.show()
 
 #Run images through the features network
 features = model.feature_forward(images)
-print(features.shape)
+
 
 
 #image features are a collection of {data_dict,features}

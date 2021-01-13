@@ -6,7 +6,7 @@ import cv2
 from tfrecord.torch.dataset import TFRecordDataset
 
 
-def visbility_matrix(torch_df):
+def visibility_matrix(torch_df):
     '''indentify neighbours to the right and down and generate visibility matrix / neighbourhood graph.
         for each node, we indentify it's closest neighbour to the right and the closest neighbour below.
     input: numpy array of shape (words, [x1, x2, y1, y2])
@@ -48,7 +48,18 @@ def visbility_matrix(torch_df):
             matrix[i,min_down_idx] = 1
             matrix[min_down_idx, i] = 1
             
-    return torch.tensor(matrix)
+    source = []
+    target = []
+
+    for i, row in enumerate(matrix):
+        for j, edge in enumerate(row):
+            if edge == 1:
+                source.append(i)
+                target.append(j)
+
+    edge_index = torch.tensor([source, target], dtype=torch.long)
+
+    return edge_index
 
 
 def tfrecord_transforms(elem,
@@ -82,18 +93,23 @@ def tfrecord_transforms(elem,
         data_dict['num_words'] = num_words
 
         #TODO Maybe change vertex_feats to just be tensor of fixed size
-        vertex_feats_pre = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5)
+        vertex_feats_pre = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
         vertex_feats = []
         for idx,v in enumerate(vertex_feats_pre):
-            vertex_feats.append(v[0:num_words[idx]])
+            v_ = v[0:num_words[idx]]
+            v_[:,0] = torch.true_divide(v_[:,0], max_width)
+            v_[:,1] = torch.true_divide(v_[:,1],max_height)
+            v_[:,2] = torch.true_divide(v_[:,2],max_width)
+            v_[:,3] = torch.true_divide(v_[:,3],max_height)
+            vertex_feats.append(v_)
         data_dict['vertex_features'] = vertex_feats    
                 
         #Calculate visibility matrix for each batch element
-        edge_matrix = []
+        edge_index = []
         for vex in vertex_feats:
-            edge_matrix.append(visbility_matrix(vex))
+            edge_index.append(visibility_matrix(vex))
          
-        data_dict['edge_matrix'] = edge_matrix
+        data_dict['edge_index'] = edge_index
 
         #Reshape adjacency matrices
         data_dict['adjacency_matrix_cells'] = elem['adjacency_matrix_cells'].reshape(batch_size,

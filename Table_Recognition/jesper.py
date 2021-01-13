@@ -57,23 +57,22 @@ def adjacency_graphs(df,Column_THRES=10):
 
     for i, row1 in enumerate(npdf):
         for j,row2 in enumerate(npdf):
-            #Check if on same page
-            if row1[4] == row2[4]:
-                #Check if on same line
-                if (abs(row1[3] - row2[3]) <= Row_THRESH or abs(row1[2] - row2[2]) <= Row_THRESH):
-                    #Word to the right 
-                    if row1[1] < row2[0]:
-                        right_matrix[i][j] = -abs(row1[1] - row2[0])
-                    #Word to the left
-                    elif row2[1] < row1[0]:
-                        left_matrix[i][j] = -abs(row1[0] - row2[1])
-                #Check if words are left aligned:
-                elif abs(row1[0] - row2[0]) <= Column_THRES  and row1[3] < row2[2]:
-                    l_down_matrix[i][j] = -abs(row1[3] - row2[2])
-                #Check if words are right aligned: 
-                elif abs(row1[1] - row2[1]) <= Column_THRES and row1[3] < row2[2]:
-                    r_down_matrix[i][j] = -abs(row1[3] - row2[2])
-                #Check if words are right aligned:
+
+            #Check if on same line
+            if (abs(row1[3] - row2[3]) <= Row_THRESH or abs(row1[2] - row2[2]) <= Row_THRESH):
+                #Word to the right 
+                if row1[1] < row2[0]:
+                    right_matrix[i][j] = -abs(row1[1] - row2[0])
+                #Word to the left
+                elif row2[1] < row1[0]:
+                    left_matrix[i][j] = -abs(row1[0] - row2[1])
+            #Check if words are left aligned:
+            elif abs(row1[0] - row2[0]) <= Column_THRES  and row1[3] < row2[2]:
+                l_down_matrix[i][j] = -abs(row1[3] - row2[2])
+            #Check if words are right aligned: 
+            elif abs(row1[1] - row2[1]) <= Column_THRES and row1[3] < row2[2]:
+                r_down_matrix[i][j] = -abs(row1[3] - row2[2])
+                
     return give_graph(right_matrix), give_graph(left_matrix), give_graph(r_down_matrix),give_graph(l_down_matrix)
 
 
@@ -92,8 +91,6 @@ def median_space_distance(df,r):
             continue
         ll = np.array(dists,dtype=int)   
     return np.median(ll)
-
-
 
 
 
