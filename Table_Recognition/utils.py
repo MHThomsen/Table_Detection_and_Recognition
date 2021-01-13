@@ -3,9 +3,6 @@ import torch
 import tfrecord
 import cv2
 
-
-
-
 from tfrecord.torch.dataset import TFRecordDataset
 
 
@@ -52,7 +49,6 @@ def visbility_matrix(torch_df):
             matrix[min_down_idx, i] = 1
             
     return torch.tensor(matrix)
-
 
 
 def tfrecord_transforms(elem,

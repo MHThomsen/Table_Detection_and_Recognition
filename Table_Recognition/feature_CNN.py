@@ -19,12 +19,16 @@ def compute_conv_dim(dim_size,kernel_size,padding,stride):
 # define network
 class FeatureNet_v1(nn.Module):
     def __init__(self,input_channels=1
-                    ,input_dim=600
+                    ,img_h=766
+                    ,img_w=1366
                     ,num_classes=4):
         super(FeatureNet_v1, self).__init__()
         self.input_channels = input_channels
-        #Assume image with w = h
-        self.input_dim = input_dim
+        
+        self.img_h = img_h
+        self.img_w = img_w
+        
+
         self.num_classes = num_classes
         
         
@@ -34,29 +38,36 @@ class FeatureNet_v1(nn.Module):
                              stride=1,
                              padding=0)
         
-        dim_c1 = compute_conv_dim(self.input_dim,3,0,1)
+        dim_c1_w = compute_conv_dim(self.img_w,3,0,1)
+        dim_c1_h = compute_conv_dim(self.img_h,3,0,1)
         
         self.conv_2 = Conv2d(in_channels=8,
                             out_channels = 16,
                             kernel_size = 3,
                             stride=1,
                             padding=0)
-        dim_c2 = compute_conv_dim(dim_c1,3,0,1)
+        
+        dim_c2_w = compute_conv_dim(dim_c1_w,3,0,1)
+        dim_c2_h = compute_conv_dim(dim_c1_h,3,0,1)
         
         self.pool_1 = MaxPool2d(5,stride=2)
         
-        dim_p1 = compute_conv_dim(dim_c2,5,0,2)
+        dim_p1_w = compute_conv_dim(dim_c2_w,5,0,2)
+        dim_p1_h = compute_conv_dim(dim_c2_h,5,0,2)
         
         self.conv_3 = Conv2d(in_channels=16,
                             out_channels=32,
                             kernel_size=5,
                             stride=1,
                             padding=0)
-        dim_c3 = compute_conv_dim(dim_p1,5,0,1)
+        
+        dim_c3_w = compute_conv_dim(dim_p1_w,5,0,1)
+        dim_c3_h = compute_conv_dim(dim_p1_h,5,0,1)
         
         self.pool_2 = AvgPool2d(5,stride=3)
         
-        dim_p2 = compute_conv_dim(dim_c3,5,0,3)  
+        dim_p2_w = compute_conv_dim(dim_c3_w,5,0,3)  
+        dim_p2_h = compute_conv_dim(dim_c3_h,5,0,3)  
         
       
         self.dropout = Dropout2d(p=0.5)
@@ -64,7 +75,7 @@ class FeatureNet_v1(nn.Module):
         
         
         #parameters for output layer = dim_p2*dim_p2*128
-        self.l1_in_features = dim_p2*dim_p2* 32
+        self.l1_in_features = dim_p2_w*dim_p2_h*32
         
         self.l_1 = Linear(in_features=self.l1_in_features,
                         out_features=128)
