@@ -16,9 +16,6 @@ import config
 "Very early version of main loop. Testing imports and pipeline atm."
 
 
-
-
-
 #Load list of tfRecords from folder: 
 folder_path = "tfrecords"
 
@@ -86,6 +83,11 @@ features = model.feature_forward(images)
 #Define GCN model
 GCN = SimpleNet()
 
+
+
+
+
+
 # move model to the right device
 model.to(device)
 
@@ -97,4 +99,5 @@ optimizer = torch.optim.SGD(params, lr=0.005,
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=3,
                                                 gamma=0.1)
+
 
