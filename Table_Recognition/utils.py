@@ -6,7 +6,7 @@ import cv2
 from tfrecord.torch.dataset import TFRecordDataset
 
 
-def visibility_matrix(torch_df):
+def visibility_matrix(torch_df,num_words):
     '''indentify neighbours to the right and down and generate visibility matrix / neighbourhood graph.
         for each node, we indentify it's closest neighbour to the right and the closest neighbour below.
     input: numpy array of shape (words, [x1, x2, y1, y2])
@@ -15,9 +15,12 @@ def visibility_matrix(torch_df):
     #remove last column (word_length)
     npdf = torch_df.numpy()
     
-    matrix = np.zeros((npdf.shape[0], npdf.shape[0]))
+    #Only create matrix of size matching number of words
+    matrix = np.zeros((num_words, num_words))
 
     for i,row1 in enumerate(npdf):
+        if i == num_words:
+            break
 
         #xmin = 0
         #ymin = 1
@@ -30,6 +33,8 @@ def visibility_matrix(torch_df):
         min_right_idx = None
 
         for j,row2 in enumerate(npdf):
+            if j == num_words:
+                break
             if i != j:
                 #Right neighbour
                 if row1[1] <= row2[1] <= row1[3] or row1[1] <= row2[3] <= row1[3] or row2[1] <= row1[1] <= row2[3] or row2[1] <= row1[3] <= row2[3]:
@@ -93,7 +98,14 @@ def tfrecord_transforms(elem,
         data_dict['num_words'] = num_words
 
         #TODO Maybe change vertex_feats to just be tensor of fixed size
-        vertex_feats_pre = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
+        
+        v = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
+        #normalizaing words coordinates to be invariant to image size 
+        v[:,:,0] = v[:,:,0]/max_width
+        v[:,:,1] = v[:,:,1]/max_height
+        v[:,:,2] = v[:,:,2]/max_width
+        v[:,:,3] = v[:,:,3]/max_height
+        '''
         vertex_feats = []
         for idx,v in enumerate(vertex_feats_pre):
             v_ = v[0:num_words[idx]]
@@ -102,12 +114,14 @@ def tfrecord_transforms(elem,
             v_[:,2] = torch.true_divide(v_[:,2],max_width)
             v_[:,3] = torch.true_divide(v_[:,3],max_height)
             vertex_feats.append(v_)
-        data_dict['vertex_features'] = vertex_feats    
+        
+        '''
+        data_dict['vertex_features'] = v  
                 
         #Calculate visibility matrix for each batch element
         edge_index = []
-        for vex in vertex_feats:
-            edge_index.append(visibility_matrix(vex))
+        for idx,vex in enumerate(v):
+            edge_index.append(visibility_matrix(vex,num_words[idx]))
          
         data_dict['edge_index'] = edge_index
 
