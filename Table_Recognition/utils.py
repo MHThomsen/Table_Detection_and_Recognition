@@ -105,17 +105,7 @@ def tfrecord_transforms(elem,
         v[:,:,1] = v[:,:,1]/max_height
         v[:,:,2] = v[:,:,2]/max_width
         v[:,:,3] = v[:,:,3]/max_height
-        '''
-        vertex_feats = []
-        for idx,v in enumerate(vertex_feats_pre):
-            v_ = v[0:num_words[idx]]
-            v_[:,0] = torch.true_divide(v_[:,0], max_width)
-            v_[:,1] = torch.true_divide(v_[:,1],max_height)
-            v_[:,2] = torch.true_divide(v_[:,2],max_width)
-            v_[:,3] = torch.true_divide(v_[:,3],max_height)
-            vertex_feats.append(v_)
-        
-        '''
+
         data_dict['vertex_features'] = v  
                 
         #Calculate visibility matrix for each batch element

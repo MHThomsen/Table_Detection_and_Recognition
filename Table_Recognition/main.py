@@ -7,7 +7,7 @@ from tfrecord.torch.dataset import TFRecordDataset
 
 from utils import tfrecord_transforms, rescale_img_quad
 from feature_CNN import FeatureNet_v1
-
+from GCN import SimpleNet
 
 import config
 
@@ -83,5 +83,18 @@ features = model.feature_forward(images)
 #image features are a collection of {data_dict,features}
 
 
+#Define GCN model
+GCN = SimpleNet()
 
+# move model to the right device
+model.to(device)
+
+# construct an optimizer
+params = [p for p in model.parameters() if p.requires_grad]
+optimizer = torch.optim.SGD(params, lr=0.005,
+                            momentum=0.9, weight_decay=0.0005)
+# and a learning rate scheduler
+lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                step_size=3,
+                                                gamma=0.1)
 
