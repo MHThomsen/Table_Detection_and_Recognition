@@ -115,6 +115,7 @@ def tfrecord_transforms(elem,
          
         data_dict['edge_index'] = edge_index
 
+        #TODO maybe "shave" matrices down to num_words*num_words in size. 
         #Reshape adjacency matrices
         data_dict['adjacency_matrix_cells'] = elem['adjacency_matrix_cells'].reshape(batch_size,
                                                                                      num_of_max_vertices,

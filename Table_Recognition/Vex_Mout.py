@@ -1,20 +1,156 @@
-'''
-graph2head.py'''
-
 import numpy as np
 
+import torch 
+import torch.nn as nn
+import torch.nn.functional as F
+
+#import simplest network modules
+from feature_CNN import FeatureNet_v1 
+from GCNN import SimpleNet
+from classification_head import head_v1
+from gather import simplest_gather
+#from dist_funcs import simple_dist
 
 
-indsæt = 4
 
-matrix = data_dict['adjacency_matrix_rows'][indsæt]
-num_words = data_dict['num_words'][indsæt]
+class VexMoutNet(nn.Module):
+    #Final network, encapsulating all modules
+    def __init__(self, 
+                feature_net = None,
+                gcnn = None,
+                classification_head = None,
+                gather_func = None,
+                distance_func = None,
+                img_h = 768,
+                img_w = 1366,
+                gcn_out_dim=100,
+                max_sampling_size=5):
+        super(VexMoutNet,self).__init__()
+        self.feature_net = feature_net
+        self.gcnn = gcnn
+        
+        
+        self.classification_head_cells = classification_head
+        self.classification_head_rows = classification_head
+        self.classification_head_cols = classification_head
+        
+        self.gather_func = gather_func
+        self.distance_func = distance_func
+        self.max_sampling_size = max_sampling_size
+
+
+        if self.feature_net is None:
+            self.feature_net = FeatureNet_v1()
+
+        if self.gather_func is None:
+            self.gather_func = simplest_gather
+
+        if self.gcn is None:
+            self.gcnn = SimpleNet(out_features=gcn_out_dim)
+
+        if self.distance_func is None:
+            self.distance_func = simple_dist
+
+        if self.classification_head is None:
+            self.classification_head_cells = self.classification_head_rows = self.classification_head_cols = head_v1(input_shape=gcn_out_dim)
+
+        
+
+
+    def head_loss(self,predicted_logits,targets):
+        loss = nn.BCEWithLogitsLoss()
+        return loss(predicted_logits,targets)
 
 
 
 
-def generate_distances(mans, num_words, matrix, max_samps = 5, training=True):
-    num_features = mans.shape[1]
+
+    def forward(self,data_dict):
+        #input is dictionary of all data
+
+        #after running through feature net, gcn then sampling happens. Thus after sampling we reconstruct the ground truth data, based on the sample and three adjacency matrices
+        #output should be (predictions, targets)_rows/cols/cells
+
+        #data_dict:
+        #'imgs': images in a batch
+        #'num_words': number of words on each image 
+        #'vertex_features': (x1,y1,x2,y2,word_lenth) of all words on each image
+        #'edge_index' : created from visibility graph, adjacency input to GCNN
+        #'adjacency_matrix_cells' 
+        #'adjacency_matrix_cols'
+        #'adjacency_matrix_rows'
+
+        
+        
+        #Do not include feature generation or gather function in gradients
+        with torch.no_grad:
+            #Create feature map
+            features = self.feature_net.feature_forward(data_dict['imgs'])
+
+            #Gather function:
+            gcn_features = self.gather_func(data_dict['vertex_features'],features)
+
+        
+        #Initialize GCNN layers (they depend on the number of features from the gather function)
+        self.gcn.define_layers(num_features=gcn_features.shape(2))
+
+
+        graph_features = self.gcn(gcn_features,data_dict['edge_index'])
+
+
+        #Now ready to input into 3 separate classification heads
+
+        #if training, take sample from adjacency matrix
+        
+
+        #TODO find ud hvordan faster rcnn bruger loss dict
+        loss_dict = {}
+        
+        if self.training:
+            #Cells
+
+            #extract targets from adjacency matrix based on indexes
+
+            #extract features and calculate distance function on all pairs
+
+            #put features through classification head
+
+
+            #calculate loss based 
+
+            loss_dict['cells'] = None
+
+
+
+
+
+
+        else:
+            predictions = self.classification_head(graph_features)
+
+
+
+
+
+
+
+
+
+
+
+def simple_dist(vertex_features):
+    return None
+
+
+def extract_sample_features(indexes):
+    return None
+
+def extract_sample_matrix(indexes,matrix):
+    return None
+
+def even_sampling(num_words, matrix, max_samps = 5):
+    #removed "mans" from inputs
+    #num_features = mans.shape[1]
     matrix = matrix[:num_words,:num_words].numpy()
 
     pairs = set()
@@ -74,8 +210,6 @@ def generate_distances(mans, num_words, matrix, max_samps = 5, training=True):
                     break
 
 
-
-
+    #TODO Return indexes of all pairs to be used for sampling
     
-    #test: 
-    
+

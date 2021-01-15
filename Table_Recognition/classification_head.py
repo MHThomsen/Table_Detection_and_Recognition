@@ -2,12 +2,6 @@ from torch import nn
 from torch.nn import functional as F
 
 
-def head_loss(predicted_logits,targets):
-    loss = nn.BCEWithLogitsLoss()
-    
-    return loss(predicted_logits,targets)
-
-
 
 class head_v1(nn.Module):
     def __init__(self, 
