@@ -13,7 +13,10 @@ import numpy as np
 #return:
     # features: tensor of size batch_size * max_number_of_vetices * num_features, where num_features can vary between functions
 
-
-
-def simplest_gather(vertex_features,feature_map):
-    return vertex_features
+class simplest_gather():
+    
+    def __init__(self):
+        self.out_dim = 5
+    
+    def gather(self,vertex_features,feature_map):
+        return vertex_features

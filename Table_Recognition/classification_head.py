@@ -15,15 +15,15 @@ class head_v1(nn.Module):
         self.fc1 = nn.Linear(self.input_shape,self.hidden_units)
         self.fc2 = nn.Linear(self.hidden_units,self.hidden_units)
 
-        self.out == nn.Linear(self.hidden_units,1)
+        self.fcout = nn.Linear(self.hidden_units,1)
 
 
     def forward(self,x):
         x = x.flatten(start_dim=1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-
-        return self.out(x)
+        
+        return self.fcout(x)
 
 
 

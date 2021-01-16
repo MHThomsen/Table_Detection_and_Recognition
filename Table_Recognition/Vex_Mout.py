@@ -9,6 +9,7 @@ from feature_CNN import FeatureNet_v1
 from GCNN import SimpleNet
 from classification_head import head_v1
 from gather import simplest_gather
+from dist_funcs import abs_dist
 #from dist_funcs import simple_dist
 
 
@@ -43,18 +44,20 @@ class VexMoutNet(nn.Module):
             self.feature_net = FeatureNet_v1()
 
         if self.gather_func is None:
-            self.gather_func = simplest_gather
+            self.gather_func = simplest_gather()
 
-        if self.gcn is None:
-            self.gcnn = SimpleNet(out_features=gcn_out_dim)
+        if self.gcnn is None:
+            self.gcnn = SimpleNet(in_features = self.gather_func.out_dim,out_features=gcn_out_dim)
 
         if self.distance_func is None:
-            self.distance_func = simple_dist
+            self.distance_func = abs_dist
 
-        if self.classification_head is None:
+        if self.classification_head_cells is None:
             self.classification_head_cells = self.classification_head_rows = self.classification_head_cols = head_v1(input_shape=gcn_out_dim)
 
-        
+        #Freeze feature net parameters
+        for param in self.feature_net.parameters():
+            param.requires_grad=False
 
 
     def head_loss(self,predicted_logits,targets):
@@ -88,7 +91,7 @@ class VexMoutNet(nn.Module):
             features = self.feature_net.feature_forward(data_dict['imgs'])
 
             #Gather function:
-            gcn_features = self.gather_func(data_dict['vertex_features'],features)
+            gcn_features = self.gather_func.gather(data_dict['vertex_features'],features)
 
         
         #Initialize GCNN layers (they depend on the number of features from the gather function)
@@ -142,11 +145,19 @@ def simple_dist(vertex_features):
     return None
 
 
-def extract_sample_features(indexes):
-    return None
+def get_sample_features(sample,vertex_features,dist_func):
+    temp = vertex_features.numpy()
+    feats = []
+    for p in sample:
+        feats.append(dist_func(temp[p[0]],temp[p[1]]))
+    
+    return torch.tensor(feats)
 
-def extract_sample_matrix(indexes,matrix):
-    return None
+def get_sample_targets(sample,matrix):
+    targets = []
+    for p in sample:
+        targets.append(matrix[p])
+    return torch.stack(targets)
 
 def even_sampling(num_words, matrix, max_samps = 5):
     #removed "mans" from inputs
@@ -209,7 +220,16 @@ def even_sampling(num_words, matrix, max_samps = 5):
                 if cnt_n >= cnt_p:
                     break
 
-
-    #TODO Return indexes of all pairs to be used for sampling
+    #Concatenate the two sets
+    #First some sanity check
+    l1 = len(pairs)
+    l2 = len(neg_pairs)
+    
+    pairs.update(neg_pairs)
+    
+    assert len(pairs) == l1+l2, "Merging pairs and neg_pairs resulted in overlap. It should not!"
+    
+    
+    return list(pairs)
     
 
