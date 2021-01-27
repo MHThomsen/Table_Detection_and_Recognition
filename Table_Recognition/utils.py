@@ -97,7 +97,7 @@ def tfrecord_transforms(elem,
         num_words = elem['global_features'][:,2]
         data_dict['num_words'] = num_words
 
-        #TODO Maybe change vertex_feats to just be tensor of fixed size
+        
         
         v = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
         #normalizaing words coordinates to be invariant to image size 
@@ -106,7 +106,15 @@ def tfrecord_transforms(elem,
         v[:,:,2] = v[:,:,2]/max_width
         v[:,:,3] = v[:,:,3]/max_height
 
-        data_dict['vertex_features'] = v  
+        #data_dict['vertex_features'] = v
+
+        vertex_feats = []
+        for idx,vf in enumerate(v):
+            tmp = vf[0:num_words[idx]]
+            #tmp.requires_grad=True
+            vertex_feats.append(tmp)
+
+        data_dict['vertex_features'] = vertex_feats  
                 
         #Calculate visibility matrix for each batch element
         edge_index = []

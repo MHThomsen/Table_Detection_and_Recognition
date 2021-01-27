@@ -18,6 +18,12 @@ def compute_conv_dim(dim_size,kernel_size,padding,stride):
 
 # define network
 class FeatureNet_v1(nn.Module):
+
+    '''
+    OBS: FeatureNet_v1 indeholder 113.785.216 parametre!!!!!!!
+    '''
+
+
     def __init__(self,input_channels=1
                     ,img_h=766
                     ,img_w=1366
@@ -106,15 +112,11 @@ class FeatureNet_v1(nn.Module):
     def feature_forward(self,x): # x.size() = [batch, channel, height, width]
         #After training network, then use this to output feature map
         with torch.no_grad():
-            if self.training:
-                print("Model in Training mode - exiting forward pass.")
-                return None
-            else:
-                x = elu(self.conv_1(x))
-                x = elu(self.conv_2(x))
-                x = self.pool_1(x)
-                x = elu(self.conv_3(x))
-                x = self.pool_2(x)
+            x = elu(self.conv_1(x))
+            x = elu(self.conv_2(x))
+            x = self.pool_1(x)
+            x = elu(self.conv_3(x))
+            x = self.pool_2(x)
         return x
         
 

@@ -7,7 +7,7 @@ from tfrecord.torch.dataset import TFRecordDataset
 
 from utils import tfrecord_transforms, rescale_img_quad
 from feature_CNN import FeatureNet_v1
-from GCN import SimpleNet
+from GCNN import SimpleNet
 
 import config
 
@@ -35,6 +35,10 @@ model.eval()
 #####################################################
 #EARLY TRAINING LOOP:
 #####################################################
+#TODO DATAloader: forloop der itererer henover alle filnavne, skaber en tfloader, og så 
+#et loop mere der kører henover batches i hver fil. 
+
+
 #Iterate all tfrecord files, load each as a batch of batch_size = 8 (default)
 tfrecord_path = "/Users/Morten/Desktop/DTU/DL_SpecialKursus/TIES_DataGeneration/Data_Outputs/P3VVFC13XZDAYL3UOJH9.tfrecord"
 
@@ -53,9 +57,7 @@ data_dict = tfrecord_transforms(elem)
 
 ##########################################################################################################
 #####################################################
-images = [rescale_img_quad(img) for img in data_dict['imgs']]
-images = torch.stack(images, dim=0)
-#print(d.shape) 
+
 
 # TODO Find a way to make cropping and retain corresponding image values between feature map and image data. 
 #####################################################
@@ -72,16 +74,9 @@ plt.show()
 """
 
 
-#Run images through the features network
-features = model.feature_forward(images)
-
 
 
 #image features are a collection of {data_dict,features}
-
-
-#Define GCN model
-GCN = SimpleNet()
 
 
 

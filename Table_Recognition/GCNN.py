@@ -17,9 +17,9 @@ class SimpleNet(torch.nn.Module):
  
     def forward(self, x, edge_index):
         
-        x = self.GCNconv1conv1(x, edge_index)
+        x = self.GCNconv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
-        x = self.GCNconv2conv2(x, edge_index)
+        x = self.GCNconv2(x, edge_index)
 
         return F.log_softmax(x, dim=1)
