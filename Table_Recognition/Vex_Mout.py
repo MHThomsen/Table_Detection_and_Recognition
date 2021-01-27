@@ -13,6 +13,9 @@ from dist_funcs import abs_dist
 #from dist_funcs import simple_dist
 
 
+from time import process_time
+
+
 
 class VexMoutNet(nn.Module):
     #Final network, encapsulating all modules
@@ -168,8 +171,11 @@ class VexMoutNet(nn.Module):
         #'adjacency_matrix_cols'
         #'adjacency_matrix_rows'
 
+        
+
         batch_size = len(data_dict['vertex_features'])
 
+        t = process_time()
         #Do not include feature generation or gather function in gradients
         with torch.no_grad():
             #Create feature map
@@ -184,15 +190,12 @@ class VexMoutNet(nn.Module):
        
         '''
         ################################ ACTIVATE GRADIENTS ######################################
-        Måske ikke nødvendigt, da gradienterne bare skal beregnes på modelparametrene? 
-        for f in gcnn_input_features:
-            f.requires_grad(True)
         '''
-
+        
         graph_features = []
         for i in range(batch_size):
             graph_features.append(self.gcnn(gcnn_input_features[i],data_dict['edge_index'][i]))
-       
+        
 
         #Now ready to input into 3 separate classification heads
 
@@ -221,7 +224,8 @@ class VexMoutNet(nn.Module):
                 rows_sample = self.even_sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
                 rows_tgt.append(self.get_sample_targets(rows_sample,data_dict['adjacency_matrix_rows'][idx]))
                 rows_feat.append(self.get_sample_features(rows_sample,graph_features[idx],self.distance_func))
-
+            
+            
             #Collect everything in batch to single tensor, to pass throgh classification head    
             cells_targets = torch.cat(cells_tgt,dim=0).float()
             cells_features = torch.cat(cells_feat,dim=0)
@@ -242,12 +246,7 @@ class VexMoutNet(nn.Module):
             loss_cols = self.head_loss(cols,cols_targets)
             loss_rows = self.head_loss(rows,rows_targets)
 
-
             return loss_cells + loss_cols + loss_rows
-            
-
-            
-
 
         else:
             with torch.no_grad():
@@ -306,13 +305,10 @@ class VexMoutNet(nn.Module):
 
                 pred_dict = {}
                 #Get predictions on
-                pred_dict['cells'] = self.classification_head_cells(classification_features)
-                pred_dict['cols'] = self.classification_head_cols(classification_features)
-                pred_dict['rows'] = self.classification_head_rows(classification_features)
+                pred_dict['cells'] = torch.sigmoid(self.classification_head_cells(classification_features))
+                pred_dict['cols'] = torch.sigmoid(self.classification_head_cols(classification_features))
+                pred_dict['rows'] = torch.sigmoid(self.classification_head_rows(classification_features))
 
-
-                #TODO Find ud af hvad der giver bedst mening - returner losses eller preductions
-                #Losses giver mulighed for at køre validering? 
 
                 return pred_dict
 
