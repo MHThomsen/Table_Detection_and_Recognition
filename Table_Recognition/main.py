@@ -6,7 +6,7 @@ import pickle
 
 from tfrecord.torch.dataset import TFRecordDataset
 
-from utils import tfrecord_transforms, get_all_targets, get_stats
+from utils import get_all_targets, get_stats, tfrecord_preparer
 from feature_CNN import FeatureNet_v1
 from GCNN import SimpleNet
 from Vex_Mout import VexMoutNet
@@ -103,7 +103,7 @@ for epoch in range(num_epochs):
         data_time+=process_time()-t
         for batch in loader:
             t = process_time()
-            data_dict = tfrecord_transforms(batch,device=device)
+            data_dict = tfrecord_preparer(batch,device=device)
             trans_time+=process_time()-t
 
             optimizer.zero_grad()
@@ -144,7 +144,7 @@ for epoch in range(num_epochs):
         loader = torch.utils.data.DataLoader(dataset, batch_size=validation_batch_size)
         for batch in loader:
             t = process_time()
-            data_dict = tfrecord_transforms(batch,device=device,batch_size=validation_batch_size)
+            data_dict = tfrecord_preparer(batch,device=device,batch_size=validation_batch_size)
             valid_trans += process_time()-t
 
 

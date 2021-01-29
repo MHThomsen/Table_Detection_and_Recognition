@@ -156,6 +156,82 @@ def tfrecord_transforms(elem,
         return data_dict
 
 
+def tfrecord_preparer(elem,
+                   device,
+                   max_height = 768,
+                   max_width = 1366,
+                   num_of_max_vertices = 250,
+                   max_length_of_word = 30,
+                   batch_size = 8):
+    """
+    Function used to transform the data loaded by the TFRecord dataloader.
+    Parameters are defind in TIES datageneration, defines the size and complexity of the generated tables. DO NOT CHANGE  
+    """
+    
+
+    with torch.no_grad():
+        #Everything is flattened in tfrecord, so needs to be reshaped. 
+
+        #Images are in range [0,255], need to be in [0,1]
+        #If image max is over 1 , then normalize: 
+        data_dict =  {}
+
+        
+        #Torch dimensions: B x C x H x W
+        #inputting grayscale, so only 1 dimension
+       
+        data_dict['imgs'] = []
+        if torch.max(elem['imgs']) > 1:
+            data_dict['imgs'].append((elem['imgs']/255).reshape(batch_size,1,max_height,max_width).to(device))
+        else:
+            data_dict['imgs'].append(elem['imgs'].reshape(batch_size,1,max_height,max_width).to(device))
+        
+
+        #Extract number of words for each image:
+        data_dict['num_words'] = elem['num_words'].reshape(-1)
+        #data_dict['num_words'] = elem['num_words'].reshape(-1).to(device)
+        
+        #Get vertex features - already in relative coordinates
+        v = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5)
+        data_dict['vertex_features'] = []
+        for i,vf in enumerate(v):
+            data_dict['vertex_features'].append(vf[:data_dict['num_words'][i]].to(device))
+        
+        #Create edge indexes
+        num_edges = elem['num_edges'].reshape(-1)
+        maxEd = torch.max(num_edges)
+        data_dict['num_edges'] = num_edges
+        data_dict['edge_indexes'] = []
+
+        for i,edx in enumerate(elem['edge_indexes'].reshape(batch_size,2,maxEd)):
+            data_dict['edge_indexes'].append(edx[:num_edges[i],:num_edges[i]].to(device))
+
+        
+        adj_cells = []
+        adj_cols = []
+        adj_rows = []
+        
+        tmp_cells = elem['adjacency_matrix_cells'].reshape(batch_size,num_of_max_vertices,num_of_max_vertices)
+        tmp_cols = elem['adjacency_matrix_cols'].reshape(batch_size,num_of_max_vertices,num_of_max_vertices)
+        tmp_rows = elem['adjacency_matrix_rows'].reshape(batch_size,num_of_max_vertices,num_of_max_vertices)
+        
+        for idx,nw in enumerate(data_dict['num_words']):
+            adj_cells.append(tmp_cells[idx][:nw,:nw])
+            adj_cols.append(tmp_cols[idx][:nw,:nw])
+            adj_rows.append(tmp_rows[idx][:nw,:nw])
+
+        data_dict['adjacency_matrix_cells'] = adj_cells
+        data_dict['adjacency_matrix_cols'] = adj_cols
+        data_dict['adjacency_matrix_rows'] = adj_rows
+        
+
+        return data_dict
+
+
+
+
+
+
 def confusion(prediction, truth):
     """ Returns the confusion matrix for the values in the `prediction` and `truth`
     tensors, i.e. the amount of positions where the values of `prediction`
