@@ -111,12 +111,12 @@ class FeatureNet_v1(nn.Module):
 
     def feature_forward(self,x): # x.size() = [batch, channel, height, width]
         #After training network, then use this to output feature map
-        with torch.no_grad():
-            x = elu(self.conv_1(x))
-            x = elu(self.conv_2(x))
-            x = self.pool_1(x)
-            x = elu(self.conv_3(x))
-            x = self.pool_2(x)
+      
+        x = self.conv_1(x)
+        x = elu(self.conv_2(x))
+        x = self.pool_1(x)
+        x = elu(self.conv_3(x))
+        x = self.pool_2(x)
         return x
         
 
