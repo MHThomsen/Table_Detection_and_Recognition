@@ -68,93 +68,6 @@ def visibility_matrix(torch_df,num_words):
     return edge_index
 
 
-def tfrecord_transforms(elem,
-                   device,
-                   max_height = 768,
-                   max_width = 1366,
-                   num_of_max_vertices = 250,
-                   max_length_of_word = 30,
-                   batch_size = 8):
-    """
-    Function used to transform the data loaded by the TFRecord dataloader.
-    Parameters are defind in TIES datageneration, defines the size and complexity of the generated tables. DO NOT CHANGE  
-    """
-    reshape = 0
-    xnumwords = 0
-    feat_reshap = 0
-    visimat = 0
-    adjmats = 0
-
-    with torch.no_grad():
-        #Everything is flattened in tfrecord, so needs to be reshaped. 
-
-        #Images are in range [0,255], need to be in [0,1]
-        #If image max is over 1 , then normalize: 
-        data_dict =  {}
-
-        
-        #Torch dimensions: B x C x H x W
-        #inputting grayscale, so only 1 dimension
-        t = process_time()
-        if torch.max(elem['image']) > 1:
-            data_dict['imgs'] = (elem['image']/255).reshape(batch_size,1,max_height,max_width).to(device)
-        else:
-            data_dict['imgs'] = elem['image'].reshape(batch_size,1,max_height,max_width).to(device)
-        reshape+=process_time()-t
-
-        #Extract number of words for each image:
-        t = process_time()
-        num_words = elem['global_features'][:,2]
-        data_dict['num_words'] = num_words.to(device)
-        xnumwords += process_time()-t
-        
-        t = process_time()
-        v = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
-        feat_reshap += process_time()-t
-        #normalizaing words coordinates to be invariant to image size 
-        v[:,:,0] = v[:,:,0]/max_width
-        v[:,:,1] = v[:,:,1]/max_height
-        v[:,:,2] = v[:,:,2]/max_width
-        v[:,:,3] = v[:,:,3]/max_height
-
-        #data_dict['vertex_features'] = v
-
-        vertex_feats = []
-        for idx,vf in enumerate(v):
-            tmp = vf[0:num_words[idx]].to(device)
-            #tmp.requires_grad=True
-            vertex_feats.append(tmp)
-
-        data_dict['vertex_features'] = vertex_feats  
-                
-        #Calculate visibility matrix for each batch element
-        t = process_time()
-        edge_index = []
-        for idx,vex in enumerate(v):
-            edge_index.append(visibility_matrix(vex,num_words[idx]).to(device))
-        visimat += process_time()-t
-         
-        data_dict['edge_index'] = edge_index
-
-        
-        adj_cells = []
-        adj_cols = []
-        adj_rows = []
-        for idx,nw in enumerate(num_words):
-            adj_cells.append(elem['adjacency_matrix_cells'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
-            adj_cols.append(elem['adjacency_matrix_cols'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
-            adj_rows.append(elem['adjacency_matrix_rows'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
-
-        data_dict['adjacency_matrix_cells'] = adj_cells
-        data_dict['adjacency_matrix_cols'] = adj_cols
-        data_dict['adjacency_matrix_rows'] = adj_rows
-        
-
-        
-        print(f'#####TRANSFORMS: reshape: {reshape}, extract number of words: {xnumwords}, feat_reshape: {feat_reshap}, visibility matrix: {visimat}, adjacency matrix: {adjmats}')
-
-        return data_dict
-
 
 def tfrecord_preparer(elem,
                    device,
@@ -383,3 +296,92 @@ def rescale_img_quad(image,
     out = torch.tensor(img).reshape(1,output_size,output_size)
     return out
 
+
+def tfrecord_transforms(elem,
+                   device,
+                   max_height = 768,
+                   max_width = 1366,
+                   num_of_max_vertices = 250,
+                   max_length_of_word = 30,
+                   batch_size = 8):
+    """
+    DEPRECATED!!!
+
+    Function used to transform the data loaded by the TFRecord dataloader.
+    Parameters are defind in TIES datageneration, defines the size and complexity of the generated tables. DO NOT CHANGE  
+    """
+    reshape = 0
+    xnumwords = 0
+    feat_reshap = 0
+    visimat = 0
+    adjmats = 0
+
+    with torch.no_grad():
+        #Everything is flattened in tfrecord, so needs to be reshaped. 
+
+        #Images are in range [0,255], need to be in [0,1]
+        #If image max is over 1 , then normalize: 
+        data_dict =  {}
+
+        
+        #Torch dimensions: B x C x H x W
+        #inputting grayscale, so only 1 dimension
+        t = process_time()
+        if torch.max(elem['image']) > 1:
+            data_dict['imgs'] = (elem['image']/255).reshape(batch_size,1,max_height,max_width).to(device)
+        else:
+            data_dict['imgs'] = elem['image'].reshape(batch_size,1,max_height,max_width).to(device)
+        reshape+=process_time()-t
+
+        #Extract number of words for each image:
+        t = process_time()
+        num_words = elem['global_features'][:,2]
+        data_dict['num_words'] = num_words.to(device)
+        xnumwords += process_time()-t
+        
+        t = process_time()
+        v = elem['vertex_features'].reshape(batch_size,num_of_max_vertices,5).float()
+        feat_reshap += process_time()-t
+        #normalizaing words coordinates to be invariant to image size 
+        v[:,:,0] = v[:,:,0]/max_width
+        v[:,:,1] = v[:,:,1]/max_height
+        v[:,:,2] = v[:,:,2]/max_width
+        v[:,:,3] = v[:,:,3]/max_height
+
+        #data_dict['vertex_features'] = v
+
+        vertex_feats = []
+        for idx,vf in enumerate(v):
+            tmp = vf[0:num_words[idx]].to(device)
+            #tmp.requires_grad=True
+            vertex_feats.append(tmp)
+
+        data_dict['vertex_features'] = vertex_feats  
+                
+        #Calculate visibility matrix for each batch element
+        t = process_time()
+        edge_index = []
+        for idx,vex in enumerate(v):
+            edge_index.append(visibility_matrix(vex,num_words[idx]).to(device))
+        visimat += process_time()-t
+         
+        data_dict['edge_index'] = edge_index
+
+        
+        adj_cells = []
+        adj_cols = []
+        adj_rows = []
+        for idx,nw in enumerate(num_words):
+            adj_cells.append(elem['adjacency_matrix_cells'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
+            adj_cols.append(elem['adjacency_matrix_cols'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
+            adj_rows.append(elem['adjacency_matrix_rows'][idx].reshape(num_of_max_vertices,num_of_max_vertices)[:nw][:nw].to(device))
+
+        data_dict['adjacency_matrix_cells'] = adj_cells
+        data_dict['adjacency_matrix_cols'] = adj_cols
+        data_dict['adjacency_matrix_rows'] = adj_rows
+        
+
+        
+        print(f'#####TRANSFORMS: reshape: {reshape}, extract number of words: {xnumwords}, feat_reshape: {feat_reshap}, visibility matrix: {visimat}, adjacency matrix: {adjmats}')
+
+        return data_dict
