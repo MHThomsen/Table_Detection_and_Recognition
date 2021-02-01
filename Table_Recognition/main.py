@@ -187,6 +187,8 @@ for epoch in range(num_epochs):
         Stats['f1_rows'].append(stat_dict['rows']['f1'])
 
 
+#GEM MODEL OGSÅ!!!
+
 with open('Stats.pickle', 'wb') as handle:
     pickle.dump(Stats, handle, protocol=pickle.HIGHEST_PROTOCOL)
     

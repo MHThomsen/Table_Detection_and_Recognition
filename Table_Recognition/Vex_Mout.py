@@ -43,12 +43,15 @@ class VexMoutNet(nn.Module):
         self.distance_func = distance_func
         self.max_sampling_size = max_sampling_size
 
-
-        if self.feature_net is None:
-            self.feature_net = FeatureNet_v1()
-
         if self.gather_func is None:
             self.gather_func = simplest_gather()
+
+        if self.feature_net is None:
+            self.gather_func = simplest_gather()
+            print("No featureNet defined in VexMout - using simplestgather func!")
+            
+
+        
 
         if self.gcnn is None:
             self.gcnn = SimpleNet(in_features = self.gather_func.out_dim,out_features=gcnn_out_dim)
@@ -180,10 +183,13 @@ class VexMoutNet(nn.Module):
         
         with torch.no_grad():
             #Create feature map
-            features = self.feature_net.feature_forward(data_dict['imgs'])
-
+            
+            if self.feature_net is not None:
+                feature_map = self.feature_net.feature_forward(data_dict['imgs'])
+            else:
+                feature_map = None    
             #Gather function:
-            gcnn_input_features = self.gather_func.gather(data_dict['vertex_features'],features)
+            gcnn_input_features = self.gather_func.gather(data_dict['vertex_features'],feature_map)
 
        
         '''

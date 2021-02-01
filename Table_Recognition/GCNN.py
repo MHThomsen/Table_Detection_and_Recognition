@@ -12,8 +12,8 @@ class SimpleNet(torch.nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         
-        self.GCNconv1 = GCNConv(self.in_features, 16)
-        self.GCNconv2 = GCNConv(16, self.out_features)
+        self.GCNconv1 = GCNConv(self.in_features, 64)
+        self.GCNconv2 = GCNConv(64, self.out_features)
  
     def forward(self, x, edge_index):
         
