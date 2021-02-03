@@ -49,9 +49,12 @@ class VexMoutNet(nn.Module):
         if self.feature_net is None:
             self.gather_func = simplest_gather()
             print("No featureNet defined in VexMout - using simplestgather func!")
-            
+        else:
+            #Freeze feature net parameters
+            for param in self.feature_net.parameters():
+                param.requires_grad=False
 
-        
+                    
 
         if self.gcnn is None:
             self.gcnn = SimpleNet(in_features = self.gather_func.out_dim,out_features=gcnn_out_dim)
@@ -64,9 +67,6 @@ class VexMoutNet(nn.Module):
             self.classification_head_rows = head_v1(input_shape=gcnn_out_dim)
             self.classification_head_cols = head_v1(input_shape=gcnn_out_dim)
 
-        #Freeze feature net parameters
-        for param in self.feature_net.parameters():
-            param.requires_grad=False
 
 
     def head_loss(self,predicted_logits,targets):
@@ -160,7 +160,7 @@ class VexMoutNet(nn.Module):
 
 
     def forward(self,
-                data_dict,
+                data_dict, device,
                 pred_thresh=0.5):
         #input is dictionary of all data
         #after running through feature net, gcn then sampling happens. Thus after sampling we reconstruct the ground truth data, based on the sample and three adjacency matrices
@@ -198,7 +198,7 @@ class VexMoutNet(nn.Module):
         
         graph_features = []
         for i in range(batch_size):
-            graph_features.append(self.gcnn(gcnn_input_features[i],data_dict['edge_index'][i]))
+            graph_features.append(self.gcnn(gcnn_input_features[i],data_dict['edge_indexes'][i]))
 
         
         #Now ready to input into 3 separate classification heads
@@ -232,13 +232,13 @@ class VexMoutNet(nn.Module):
             
             
             #Collect everything in batch to single tensor, to pass throgh classification head    
-            cells_targets = torch.cat(cells_tgt,dim=0).float()
+            cells_targets = torch.cat(cells_tgt,dim=0).float().to(device)
             cells_features = torch.cat(cells_feat,dim=0)
             
-            cols_targets = torch.cat(cols_tgt,dim=0).float()
+            cols_targets = torch.cat(cols_tgt,dim=0).float().to(device)
             cols_features = torch.cat(cols_feat,dim=0)
             
-            rows_targets = torch.cat(rows_tgt,dim=0).float()
+            rows_targets = torch.cat(rows_tgt,dim=0).float().to(device)
             rows_features = torch.cat(rows_feat,dim=0)
             
             #Get predictions

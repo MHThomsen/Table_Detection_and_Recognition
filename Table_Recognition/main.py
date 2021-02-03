@@ -20,7 +20,7 @@ from time import process_time
 
 
 #Load list of tfRecords from folder: 
-folder_path = os.getcwd()+r'\tfrecords'
+folder_path = os.getcwd()+r'\Table_Recognition\tfrecords'
 #folder_path = "C:\Users\Jesper\Desktop\DataGeneration\Data_Outputs"
 
 #load filenames of folder: 
@@ -31,7 +31,7 @@ tfrecord_files = os.listdir(folder_path)
 #######################################################################################################
 ########################################### Params ####################################################
 #######################################################################################################
-batch_size = 8
+batch_size = 16
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -46,7 +46,7 @@ prediction_thres = 0.5
 #######################################################################################################
 
 #load Feature CNN model
-featurenet_path = os.getcwd()+r"\models\FeatureNet_v1.pt"
+featurenet_path = os.getcwd()+r"\Table_Recognition\models\FeatureNet_v1.pt"
 featurenet = FeatureNet_v1()
 featurenet.load_state_dict(torch.load(featurenet_path,map_location=torch.device('cpu')))
 featurenet.eval()
@@ -77,8 +77,6 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
 ########################################### Training Loop #############################################
 #######################################################################################################
 
-p = process_time()
-
 
 
 
@@ -86,9 +84,6 @@ for epoch in range(num_epochs):
     data_time = 0
     trans_time = 0
     forward_time = 0
-    
-    
-    
     
     model.train()
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
@@ -100,17 +95,13 @@ for epoch in range(num_epochs):
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
         
-        data_time+=process_time()-t
         for batch in loader:
-            t = process_time()
-            data_dict = tfrecord_preparer(batch,device=device)
-            trans_time+=process_time()-t
+            
+            data_dict = tfrecord_preparer(batch,device=device, batch_size=batch_size)
 
             optimizer.zero_grad()
-
-            t = process_time()
-            loss_cells, loss_cols, loss_rows, stat_dict = model(data_dict,prediction_thres)
-            forward_time+= process_time()-t
+            
+            loss_cells, loss_cols, loss_rows, stat_dict = model(data_dict, device, prediction_thres)
             
             total_loss = loss_cells + loss_cols + loss_rows 
             
@@ -127,7 +118,7 @@ for epoch in range(num_epochs):
     ################
     #TODO indsæt VALIDATION DATA i stedet for tfrecordfiles 
     #####################
-    validation_batch_size = 2
+    validation_batch_size = 4
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
     
 
@@ -143,34 +134,25 @@ for epoch in range(num_epochs):
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=validation_batch_size)
         for batch in loader:
-            t = process_time()
+            
             data_dict = tfrecord_preparer(batch,device=device,batch_size=validation_batch_size)
-            valid_trans += process_time()-t
-
-
-            t = process_time()
-            preds_dict = model(data_dict,prediction_thres)
-            valid_forward_time+=process_time()-t
-
-
-            t = process_time()
+            
+            preds_dict = model(data_dict,device, prediction_thres)
+            
             targets_cells, targets_cols, targets_rows = get_all_targets(data_dict)
-            valid_targets_time+= process_time()-t
+           
 
-
-            t = process_time()
-            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1),targets_cells)
-            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1),targets_cols)
-            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1),targets_rows)
+            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1).to(torch.device('cpu')),targets_cells)
+            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1).to(torch.device('cpu')),targets_cols)
+            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1).to(torch.device('cpu')),targets_rows)
             total_loss = loss_cells+loss_cols+loss_rows
-            valid_head+=process_time()-t
-
-            t = process_time()
-            stat_dict = get_stats(preds_dict['cells'],preds_dict['cols'],preds_dict['rows'],targets_cells,targets_cols,targets_rows,prediction_thres)
-            valid_stat+=process_time()-t
+            
+            
+            stat_dict = get_stats(preds_dict['cells'].to(torch.device('cpu')),preds_dict['cols'].to(torch.device('cpu')),preds_dict['rows'].to(torch.device('cpu')),targets_cells,targets_cols,targets_rows,prediction_thres)
+            
 
             #Iterate over, put tensors to device
-            loop.set_description(f'Validation Epoch [{epoch}/{num_epochs}]')
+            loop.set_description(f'Train Epoch [{epoch}/{num_epochs-1}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
     
     
@@ -188,6 +170,8 @@ for epoch in range(num_epochs):
 
 
 #GEM MODEL OGSÅ!!!
+torch.save(model.state_dict(), '\Table_Recognition\model.pt')
+
 
 with open('Stats.pickle', 'wb') as handle:
     pickle.dump(Stats, handle, protocol=pickle.HIGHEST_PROTOCOL)

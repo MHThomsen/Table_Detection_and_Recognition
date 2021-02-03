@@ -117,7 +117,7 @@ def tfrecord_preparer(elem,
         data_dict['edge_indexes'] = []
 
         for i,edx in enumerate(elem['edge_indexes'].reshape(batch_size,2,maxEd)):
-            data_dict['edge_indexes'].append(edx[:num_edges[i],:num_edges[i]].to(device))
+            data_dict['edge_indexes'].append(edx[:num_edges[i],:num_edges[i]].type(torch.int64).to(device))
 
         
         adj_cells = []
