@@ -112,7 +112,8 @@ def tfrecord_preparer(elem,
         
         #Create edge indexes
         num_edges = elem['num_edges'].reshape(-1)
-        maxEd = torch.max(num_edges)
+        #maxEd = torch.max(num_edges)
+        maxEd = int(elem['edge_indexes'][0].shape[0]/2)
         data_dict['num_edges'] = num_edges
         data_dict['edge_indexes'] = []
 
