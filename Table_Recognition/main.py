@@ -18,14 +18,13 @@ from time import process_time
 
 "Very early version of main loop. Testing imports and pipeline atm."
 
-
+#processed_
 #Load list of tfRecords from folder: 
-folder_path = os.getcwd()+r'\Table_Recognition\tfrecords'
-#folder_path = "C:\Users\Jesper\Desktop\DataGeneration\Data_Outputs"
+Train_path = os.getcwd()+r'\Table_Recognition\Data\Train'
+Val_path = os.getcwd()+r'\Table_Recognition\Data\Val'
 
-#load filenames of folder: 
-tfrecord_files = os.listdir(folder_path)
-
+#OBS test data is currently not in use
+Test_path = os.getcwd()+r'\Table_Recognition\Data\Test'
 
 
 #######################################################################################################
@@ -35,10 +34,9 @@ batch_size = 16
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-num_epochs = 5
+num_epochs = 10
 
 prediction_thres = 0.5
-
 
 
 #######################################################################################################
@@ -59,7 +57,15 @@ model = VexMoutNet()
 model.to(device)
 
 #stats of previous training. loss decay + f1 development
-Stats = {}
+Stats = dict()
+Stats['total_loss'] = []
+Stats['loss_cells'] = []
+Stats['loss_cols'] = [] 
+Stats['loss_rows'] = []
+Stats['f1_cells'] = []
+Stats['f1_cols'] = []
+Stats['f1_rows'] = []
+
 
 # construct an optimizer
 params = [p for p in model.parameters() if p.requires_grad]
@@ -72,11 +78,9 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
 
 
 
-
 #######################################################################################################
 ########################################### Training Loop #############################################
 #######################################################################################################
-
 
 
 
@@ -86,15 +90,18 @@ for epoch in range(num_epochs):
     forward_time = 0
     
     model.train()
+    #load filenames of folder: 
+    tfrecord_files = os.listdir(Train_path)
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
     for idx, record in loop:
 
         t = process_time()
-        tfrecord_path = os.path.join(folder_path,record)
+        tfrecord_path = os.path.join(Train_path,record)
         #Maybe tfrecords need to be generated with more files, to make loading more effective? 
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
         
+
         for batch in loader:
             
             data_dict = tfrecord_preparer(batch,device=device, batch_size=batch_size)
@@ -115,9 +122,8 @@ for epoch in range(num_epochs):
 
     torch.cuda.empty_cache()
     model.eval()
-    ################
-    #TODO indsæt VALIDATION DATA i stedet for tfrecordfiles 
-    #####################
+    tfrecord_files = os.listdir(Test_path)
+
     validation_batch_size = 4
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
     
@@ -129,7 +135,7 @@ for epoch in range(num_epochs):
     valid_trans = 0
 
     for idx, record in loop:
-        tfrecord_path = os.path.join(folder_path,record)
+        tfrecord_path = os.path.join(Test_path,record)
         #Maybe tfrecords need to be generated with more files, to make loading more effective? 
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=validation_batch_size)
@@ -152,13 +158,9 @@ for epoch in range(num_epochs):
             
 
             #Iterate over, put tensors to device
-            loop.set_description(f'Train Epoch [{epoch}/{num_epochs-1}]')
+            loop.set_description(f'Val Epoch [{epoch}/{num_epochs-1}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
     
-    
-    print(f'¤¤¤¤¤TRAINING: Data: {data_time}, transforms: {trans_time}, forward: {forward_time}')
-    print(f'#####VALIDATION: Forward: {valid_forward_time}, Targets: {valid_targets_time}, Head: {valid_head}, Stats: {valid_stat}, valid_trans{valid_trans}')
-
     if idx % 100 == 0:
         Stats['total_loss'].append(total_loss)
         Stats['loss_cells'].append(loss_cells)
@@ -170,10 +172,7 @@ for epoch in range(num_epochs):
 
 
 #GEM MODEL OGSÅ!!!
-torch.save(model.state_dict(), '\Table_Recognition\model.pt')
+torch.save(model.state_dict(), os.getcwd()+r'\Table_Recognition\model.pt')
 
-
-with open('Stats.pickle', 'wb') as handle:
+with open(os.getcwd()+r'\Table_Recognition\Stats.pickle', 'wb') as handle:
     pickle.dump(Stats, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
- 

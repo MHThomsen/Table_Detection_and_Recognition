@@ -13,7 +13,9 @@ class head_v1(nn.Module):
 
 
         self.fc1 = nn.Linear(self.input_shape,self.hidden_units)
+        #nn.init.kaiming_uniform_(self.fc1.weight, nonlinearity='relu')
         self.fc2 = nn.Linear(self.hidden_units,self.hidden_units)
+        #nn.init.kaiming_uniform_(self.fc2.weight, nonlinearity='relu')
 
         self.fcout = nn.Linear(self.hidden_units,1)
 
@@ -26,5 +28,4 @@ class head_v1(nn.Module):
         return self.fcout(x)
 
 
-
-            
+          
