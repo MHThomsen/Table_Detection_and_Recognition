@@ -28,7 +28,7 @@ class VexMoutNet(nn.Module):
                 distance_func = None,
                 img_h = 768,
                 img_w = 1366,
-                gcnn_out_dim=100,
+                gcnn_out_dim=32,
                 max_sampling_size=5):
         super(VexMoutNet,self).__init__()
         self.feature_net = feature_net
