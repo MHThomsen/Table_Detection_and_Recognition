@@ -85,9 +85,7 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
 
 
 for epoch in range(num_epochs):
-    data_time = 0
-    trans_time = 0
-    forward_time = 0
+
     
     model.train()
     #load filenames of folder: 
@@ -120,7 +118,7 @@ for epoch in range(num_epochs):
             loop.set_description(f'Train Epoch [{epoch}/{num_epochs-1}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
 
-    torch.cuda.empty_cache()
+    #torch.cuda.empty_cache()
     model.eval()
     tfrecord_files = os.listdir(Test_path)
 
