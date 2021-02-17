@@ -34,7 +34,7 @@ batch_size = 16
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-num_epochs = 10
+num_epochs = 20
 
 prediction_thres = 0.5
 
@@ -69,13 +69,15 @@ Stats['f1_rows'] = []
 
 # construct an optimizer
 params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(params, lr=0.005,
-                            momentum=0.9, weight_decay=0.0005)
+optimizer = torch.optim.SGD(params, lr=0.001,
+                            momentum=0.9, weight_decay=0.0001)
 # and a learning rate scheduler
+
+'''
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=3,
                                                 gamma=0.1)
-
+'''
 
 
 #######################################################################################################
@@ -112,7 +114,7 @@ for epoch in range(num_epochs):
             
             total_loss.backward()
             optimizer.step()
-            lr_scheduler.step()
+            #lr_scheduler.step()
 
             #Iterate over, put tensors to device
             loop.set_description(f'Train Epoch [{epoch}/{num_epochs-1}]')
