@@ -147,10 +147,10 @@ for epoch in range(num_epochs):
             
             targets_cells, targets_cols, targets_rows = get_all_targets(data_dict)
            
-
-            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1).to(torch.device('cpu')),targets_cells)
-            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1).to(torch.device('cpu')),targets_cols)
-            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1).to(torch.device('cpu')),targets_rows)
+            temp_pos_weight = torch.tensor([1]).to(device)
+            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1).to(torch.device('cpu')),targets_cells,temp_pos_weight)
+            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1).to(torch.device('cpu')),targets_cols,temp_pos_weight)
+            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1).to(torch.device('cpu')),targets_rows,temp_pos_weight)
             total_loss = loss_cells+loss_cols+loss_rows
             
             
