@@ -8,7 +8,7 @@ from tfrecord.torch.dataset import TFRecordDataset
 
 from utils import get_all_targets, get_stats, tfrecord_preparer
 from feature_CNN import FeatureNet_v1
-from GCNN import SimpleNet
+from GCNN import SimpleNet,FullyConnectNet
 from Vex_Mout import VexMoutNet
 import config
 from tqdm import tqdm
@@ -20,8 +20,8 @@ from time import process_time
 
 #processed_
 #Load list of tfRecords from folder: 
-Train_path = os.getcwd()+r'\Table_Recognition\Data\Train'
-Val_path = os.getcwd()+r'\Table_Recognition\Data\Val'
+Train_path = os.getcwd()+r'\Table_Recognition\Data\Testing_Train'
+Val_path = os.getcwd()+r'\Table_Recognition\Data\Testing_Val'
 
 #OBS test data is currently not in use
 Test_path = os.getcwd()+r'\Table_Recognition\Data\Test'
@@ -49,8 +49,8 @@ featurenet = FeatureNet_v1()
 featurenet.load_state_dict(torch.load(featurenet_path,map_location=torch.device('cpu')))
 featurenet.eval()
 
-
-model = VexMoutNet()
+model_gcnn = FullyConnectNet(4,32)
+model = VexMoutNet(gcnn=model_gcnn)
 
 
 # move model to the right device

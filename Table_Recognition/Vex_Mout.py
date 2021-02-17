@@ -69,8 +69,8 @@ class VexMoutNet(nn.Module):
 
 
 
-    def head_loss(self,predicted_logits,targets):
-        loss = nn.BCEWithLogitsLoss()
+    def head_loss(self,predicted_logits,targets,pos_weight):
+        loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         return loss(predicted_logits,targets)
 
     def get_sample_targets(self,sample,matrix):
@@ -146,15 +146,15 @@ class VexMoutNet(nn.Module):
             
         #Concatenate the two sets
         #First some sanity check
-        l1 = len(pairs)
-        l2 = len(neg_pairs)
+        npos = len(pairs)
+        nneg = len(neg_pairs)
         
         pairs.update(neg_pairs)
         
-        assert len(pairs) == l1+l2, "Merging pairs and neg_pairs resulted in overlap. It should not!"
+        assert len(pairs) == npos+nneg, "Merging pairs and neg_pairs resulted in overlap. It should not!"
         
         
-        return torch.tensor(list(pairs))
+        return torch.tensor(list(pairs)),npos,nneg
 
 
 
@@ -215,17 +215,17 @@ class VexMoutNet(nn.Module):
 
             for idx,nw in enumerate(data_dict['num_words']):
                 
-                cells_sample = self.even_sampling(nw,data_dict['adjacency_matrix_cells'][idx])
+                cells_sample,cells_pos,cells_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cells'][idx])
                 cells_tgt.append(self.get_sample_targets(cells_sample,data_dict['adjacency_matrix_cells'][idx]))   
                 cells_feat.append(self.get_sample_features(cells_sample,graph_features[idx],self.distance_func))
                 
                 
-                cols_sample = self.even_sampling(nw,data_dict['adjacency_matrix_cols'][idx])
+                cols_sample,cols_pos,cols_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cols'][idx])
                 cols_tgt.append(self.get_sample_targets(cols_sample,data_dict['adjacency_matrix_cols'][idx]))
                 cols_feat.append(self.get_sample_features(cols_sample,graph_features[idx],self.distance_func))
 
                 
-                rows_sample = self.even_sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
+                rows_sample,rows_pos,rows_neg = self.even_sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
                 rows_tgt.append(self.get_sample_targets(rows_sample,data_dict['adjacency_matrix_rows'][idx]))
                 rows_feat.append(self.get_sample_features(rows_sample,graph_features[idx],self.distance_func))
             
@@ -246,10 +246,10 @@ class VexMoutNet(nn.Module):
             cols = self.classification_head_cols(cols_features).reshape(-1)
             rows = self.classification_head_rows(rows_features).reshape(-1)
 
-            
-            loss_cells = self.head_loss(cells,cells_targets)
-            loss_cols = self.head_loss(cols,cols_targets)
-            loss_rows = self.head_loss(rows,rows_targets)
+          
+            loss_cells = self.head_loss(cells,cells_targets,torch.tensor([cells_neg/cells_pos]).to(device))
+            loss_cols = self.head_loss(cols,cols_targets,torch.tensor([cols_neg/cols_pos]).to(device))
+            loss_rows = self.head_loss(rows,rows_targets,torch.tensor([rows_neg/rows_pos]).to(device))
             
             #Calculate statistics 
             stat_dict = get_stats(cells,cols,rows,cells_targets,cols_targets,rows_targets,pred_thresh)
