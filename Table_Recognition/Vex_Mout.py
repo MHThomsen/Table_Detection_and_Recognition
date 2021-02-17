@@ -187,9 +187,13 @@ class VexMoutNet(nn.Module):
             if self.feature_net is not None:
                 feature_map = self.feature_net.feature_forward(data_dict['imgs'])
             else:
-                feature_map = None    
+                feature_map = [None]*batch_size    
             #Gather function:
-            gcnn_input_features = self.gather_func.gather(data_dict['vertex_features'],feature_map)
+            gcnn_input_features = []
+            for i in range(batch_size):
+                gcnn_input_features.append(self.gather_func.gather(data_dict['vertex_features'][i],feature_map[i]))
+
+            #gcnn_input_features = self.gather_func.gather(data_dict['vertex_features'],feature_map)
 
        
         '''
