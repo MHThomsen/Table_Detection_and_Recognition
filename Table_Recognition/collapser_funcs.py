@@ -1,18 +1,18 @@
 
 #En række funktioner som tager slice som input, og returnerer et 1d array med de ønskede features
-
+import torch
 
 class collapser_function():
     def __init__(self):
         self.out_dim = None
 
-    def is_correct_size(slice3d):
+    def is_correct_size(self, slice3d):
         #Expects input to be of shape CxWxH, but if not, 
         assert len(slice3d.shape) == 3, f"Slice er i {len(slice3d.shape)} dimensioner. Vi burde kun have et CxWxH input (ingen batch dimension)"    
         
 
 
-class min_collapser(collapser_function):
+class min_collapser():
 
     def __init__(self,
                  slice_channels,
@@ -20,12 +20,11 @@ class min_collapser(collapser_function):
                  slice_height):
         self.out_dim = slice_width*slice_height
     
-    def collapse(slice3d, *args):
-        super.is_correct_size(slice3d)
+    def collapse(self, slice3d, *args):
         return torch.min(slice3d,dim=0)[0].reshape(1,-1)
         
     
-class max_collapser(collapser_function):
+class max_collapser():
 
     def __init__(self,
                  slice_channels,
@@ -33,11 +32,10 @@ class max_collapser(collapser_function):
                  slice_height):
         self.out_dim = slice_width*slice_height
     
-    def collapse(slice3d, *args):
-        super.is_correct_size(slice3d)
+    def collapse(self, slice3d, *args):
         return torch.max(slice3d,dim=0)[0].reshape(1,-1)    
 
-class median_collapser(collapser_function):
+class median_collapser():
 
     def __init__(self,
                  slice_channels,
@@ -45,32 +43,27 @@ class median_collapser(collapser_function):
                  slice_height):
         self.out_dim = slice_width*slice_height
     
-    def collapse(slice3d, *args):
-        super.is_correct_size(slice3d)
+    def collapse(self, slice3d, *args):
         return torch.median(slice3d,dim=0)[0].reshape(1,-1)    
 
-class mean_channel_collapser(collapser_function):
-
-    def __init__(self,
-                 slice_channels,
-                 slice_width,
-                 slice_height):
-        
-         """
+class mean_channel_collapser():
+    """
         Calculate mean of all WxH pixels, across all channels. 
         Most intuitive; get mean of 2d slice
         """
         
+    def __init__(self,
+                 slice_channels,
+                 slice_width,
+                 slice_height):
         self.out_dim = slice_width*slice_height
-    
-    def collapse(slice3d, *args):
-        super.is_correct_size(slice3d)
-        
+
+    def collapse(self, slice3d, *args):        
         #OBS: intet [0] index på denne inden reshape. 
         return torch.mean(slice3d,dim=0).reshape(1,-1)   
 
 
-class mean_2d_collapser(collapser_function):
+class mean_2d_collapser():
 
     def __init__(self,
                  slice_channels,
@@ -85,14 +78,13 @@ class mean_2d_collapser(collapser_function):
         
         self.out_dim = slice_channels
     
-    def collapse(slice3d,*args):
-        super.is_correct_size(slice3d)
+    def collapse(self, slice3d,*args):
         
         #No need to reshape 
         return torch.mean(torch.mean(slice3d,dim=1),dim=1)  
 
     
-class slice_collapser(collapser_function):
+class slice_collapser():
 
     def __init__(self,
                  slice_channels,
@@ -101,11 +93,9 @@ class slice_collapser(collapser_function):
         
         self.out_dim = slice_width*slice_height
     
-    def collapse(slice3d,
+    def collapse(self, slice3d,
                  channel_no = 0):
-        
-        super.is_correct_size(slice3d)
-        
+                
         """
         Takes channel_no as input, determining which of the channels to extract
         """
