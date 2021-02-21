@@ -22,7 +22,7 @@ class SimpleNet(nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.GCNconv2(x, edge_index)
 
-        return F.log_softmax(x, dim=1)
+        return x
 
 
 

@@ -8,7 +8,8 @@ import torch.nn.functional as F
 from feature_CNN import FeatureNet_v1 
 from GCNN import SimpleNet
 from classification_head import head_v1
-from gather import simplest_gather
+from gather import simplest_gather,slice_gather
+import collapser_funcs
 from dist_funcs import abs_dist
 from utils import get_stats
 
@@ -44,7 +45,16 @@ class VexMoutNet(nn.Module):
         self.max_sampling_size = max_sampling_size
 
         if self.gather_func is None:
-            self.gather_func = simplest_gather()
+
+            #TODO uncomment
+            #self.gather_func = simplest_gather()
+
+            #TODO define slice size in config
+            self.collapser_func = collapser_funcs.mean_channel_collapser(32,43,16)
+            self.gather_func = slice_gather(self.collapser_func)
+
+
+
 
         if self.feature_net is None:
             self.gather_func = simplest_gather()
@@ -74,6 +84,8 @@ class VexMoutNet(nn.Module):
         return loss(predicted_logits,targets)
 
     def get_sample_targets(self,sample,matrix):
+        
+        #TODO Kan nok optimeres
         targets = []
         for p in sample:
             pair = (p[0],p[1])
@@ -100,8 +112,10 @@ class VexMoutNet(nn.Module):
             num_non_neighbours = len(non_neighbours)
             pos_idx = None
             neg_idx = None
+
+
             if num_neighbours!=0:
-                #we take up to max_samps positive matches
+                #Randomly permute index arrays
                 pos_idx = np.random.choice(neighbours, size=num_neighbours, replace=False)
                 neg_idx = np.random.choice(non_neighbours, size=num_non_neighbours, replace=False)
 
@@ -217,22 +231,32 @@ class VexMoutNet(nn.Module):
             cols_feat = []
             rows_feat = []  
 
+            cells_p = 0
+            cells_n = 0
+            cols_p = 0
+            cols_n = 0
+            rows_p = 0
+            rows_n = 0 
+
             for idx,nw in enumerate(data_dict['num_words']):
                 
                 cells_sample,cells_pos,cells_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cells'][idx])
                 cells_tgt.append(self.get_sample_targets(cells_sample,data_dict['adjacency_matrix_cells'][idx]))   
                 cells_feat.append(self.get_sample_features(cells_sample,graph_features[idx],self.distance_func))
-                
+                cells_p+=cells_pos
+                cells_n+=cells_neg
                 
                 cols_sample,cols_pos,cols_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cols'][idx])
                 cols_tgt.append(self.get_sample_targets(cols_sample,data_dict['adjacency_matrix_cols'][idx]))
                 cols_feat.append(self.get_sample_features(cols_sample,graph_features[idx],self.distance_func))
-
+                cols_p+=cols_pos
+                cols_n+=cols_neg
                 
                 rows_sample,rows_pos,rows_neg = self.even_sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
                 rows_tgt.append(self.get_sample_targets(rows_sample,data_dict['adjacency_matrix_rows'][idx]))
                 rows_feat.append(self.get_sample_features(rows_sample,graph_features[idx],self.distance_func))
-            
+                rows_p+=rows_pos
+                rows_n+=rows_neg
             
             
             #Collect everything in batch to single tensor, to pass throgh classification head    
@@ -246,14 +270,14 @@ class VexMoutNet(nn.Module):
             rows_features = torch.cat(rows_feat,dim=0)
             
             #Get predictions
-            cells = self.classification_head_cells(cells_features).reshape(-1)
-            cols = self.classification_head_cols(cols_features).reshape(-1)
-            rows = self.classification_head_rows(rows_features).reshape(-1)
+            cells = self.classification_head_cells(cells_features).reshape(-1).to(device)
+            cols = self.classification_head_cols(cols_features).reshape(-1).to(device)
+            rows = self.classification_head_rows(rows_features).reshape(-1).to(device)
 
           
-            loss_cells = self.head_loss(cells,cells_targets,torch.tensor([cells_neg/cells_pos]).to(device))
-            loss_cols = self.head_loss(cols,cols_targets,torch.tensor([cols_neg/cols_pos]).to(device))
-            loss_rows = self.head_loss(rows,rows_targets,torch.tensor([rows_neg/rows_pos]).to(device))
+            loss_cells = self.head_loss(cells,cells_targets,torch.tensor([cells_n/cells_p]).to(device))
+            loss_cols = self.head_loss(cols,cols_targets,torch.tensor([cols_n/cols_p]).to(device))
+            loss_rows = self.head_loss(rows,rows_targets,torch.tensor([rows_n/rows_p]).to(device))
             
             #Calculate statistics 
             stat_dict = get_stats(cells,cols,rows,cells_targets,cols_targets,rows_targets,pred_thresh)

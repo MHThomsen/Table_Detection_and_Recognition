@@ -20,8 +20,8 @@ from time import process_time
 
 #processed_
 #Load list of tfRecords from folder: 
-Train_path = os.getcwd()+r'\Table_Recognition\Data\Testing_Train'
-Val_path = os.getcwd()+r'\Table_Recognition\Data\Testing_Val'
+Train_path = os.getcwd()+r'\Table_Recognition\Data\Train'
+Val_path = os.getcwd()+r'\Table_Recognition\Data\Val'
 
 #OBS test data is currently not in use
 Test_path = os.getcwd()+r'\Table_Recognition\Data\Test'
@@ -49,8 +49,17 @@ featurenet = FeatureNet_v1()
 featurenet.load_state_dict(torch.load(featurenet_path,map_location=torch.device('cpu')))
 featurenet.eval()
 
-model_gcnn = FullyConnectNet(4,32)
-model = VexMoutNet(gcnn=model_gcnn)
+
+
+
+#######################################################################################################
+######################################## Define Model Elements ########################################
+#######################################################################################################
+
+
+
+
+model = VexMoutNet()
 
 
 # move model to the right device
@@ -70,7 +79,7 @@ Stats['f1_rows'] = []
 # construct an optimizer
 params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(params, lr=0.001,
-                            momentum=0.9, weight_decay=0.0001)
+                            momentum=0.9, weight_decay=0.01)
 # and a learning rate scheduler
 
 '''
@@ -95,13 +104,10 @@ for epoch in range(num_epochs):
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
     for idx, record in loop:
 
-        t = process_time()
         tfrecord_path = os.path.join(Train_path,record)
-        #Maybe tfrecords need to be generated with more files, to make loading more effective? 
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
         
-
         for batch in loader:
             
             data_dict = tfrecord_preparer(batch,device=device, batch_size=batch_size)
@@ -116,26 +122,18 @@ for epoch in range(num_epochs):
             optimizer.step()
             #lr_scheduler.step()
 
-            #Iterate over, put tensors to device
-            loop.set_description(f'Train Epoch [{epoch}/{num_epochs-1}]')
+            loop.set_description(f'Train Epoch [{epoch+1}/{num_epochs}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
-
+    
     #torch.cuda.empty_cache()
     model.eval()
-    tfrecord_files = os.listdir(Test_path)
+    tfrecord_files = os.listdir(Val_path)
 
     validation_batch_size = 4
     loop = tqdm(enumerate(tfrecord_files), total=len(tfrecord_files))
     
-
-    valid_forward_time = 0
-    valid_targets_time = 0
-    valid_head = 0
-    valid_stat = 0
-    valid_trans = 0
-
     for idx, record in loop:
-        tfrecord_path = os.path.join(Test_path,record)
+        tfrecord_path = os.path.join(Val_path,record)
         #Maybe tfrecords need to be generated with more files, to make loading more effective? 
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=validation_batch_size)
@@ -145,20 +143,25 @@ for epoch in range(num_epochs):
             
             preds_dict = model(data_dict,device, prediction_thres)
             
+
             targets_cells, targets_cols, targets_rows = get_all_targets(data_dict)
            
-            temp_pos_weight = torch.tensor([1]).to(device)
-            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1).to(torch.device('cpu')),targets_cells,temp_pos_weight)
-            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1).to(torch.device('cpu')),targets_cols,temp_pos_weight)
-            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1).to(torch.device('cpu')),targets_rows,temp_pos_weight)
+            temp_pos_weight = torch.tensor([1])
+            loss_cells = model.head_loss(preds_dict['cells'].reshape(-1),targets_cells.to(device),temp_pos_weight.to(device))
+            loss_cols =  model.head_loss(preds_dict['cols'].reshape(-1),targets_cols.to(device),temp_pos_weight.to(device))
+            loss_rows = model.head_loss(preds_dict['rows'].reshape(-1),targets_rows.to(device),temp_pos_weight.to(device))
             total_loss = loss_cells+loss_cols+loss_rows
+           
+            for k,v in preds_dict.items():
+                preds_dict[k] = v.to(torch.device('cpu'))
+
+
             
-            
-            stat_dict = get_stats(preds_dict['cells'].to(torch.device('cpu')),preds_dict['cols'].to(torch.device('cpu')),preds_dict['rows'].to(torch.device('cpu')),targets_cells,targets_cols,targets_rows,prediction_thres)
+            stat_dict = get_stats(preds_dict['cells'],preds_dict['cols'],preds_dict['rows'],targets_cells,targets_cols,targets_rows,prediction_thres)
             
 
             #Iterate over, put tensors to device
-            loop.set_description(f'Val Epoch [{epoch}/{num_epochs-1}]')
+            loop.set_description(f'Val Epoch [{epoch+1}/{num_epochs}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
     
     if idx % 100 == 0:

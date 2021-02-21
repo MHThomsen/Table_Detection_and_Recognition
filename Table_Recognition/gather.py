@@ -16,10 +16,10 @@ import numpy as np
 
 class simplest_gather():
     
-    def __init__(self):
+    def __init__(self, collapser_function = None):
         self.out_dim = 4
     
-    def gather(self,vertex_features,feature_map, collapser_function):
+    def gather(self,vertex_features,feature_map):
         return vertex_features[:,:4]
 
 
