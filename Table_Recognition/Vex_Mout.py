@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 #import simplest network modules
 from feature_CNN import FeatureNet_v1 
-from GCNN import SimpleNet
+from GCNN import SimpleNet,SimpleNetDeep
 from classification_head import head_v1
 from gather import simplest_gather,slice_gather
 import collapser_funcs
