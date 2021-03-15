@@ -70,7 +70,7 @@ class VexMoutNet(nn.Module):
                     
 
         if self.gcnn is None:
-            self.gcnn = SimpleNet(in_features = self.gather_func.out_dim,out_features=gcnn_out_dim)
+            self.gcnn = SimpleNetDeep(in_features = self.gather_func.out_dim,out_features=gcnn_out_dim)
 
         if self.distance_func is None:
             self.distance_func = abs_dist

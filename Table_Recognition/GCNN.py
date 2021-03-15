@@ -26,6 +26,38 @@ class SimpleNet(nn.Module):
 
 
 
+class SimpleNetDeep(nn.Module):
+
+    def __init__(self,
+                in_features,
+                out_features):
+        super(SimpleNetDeep, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        
+        self.GCNconv1 = GCNConv(self.in_features, 64)
+
+        self.GCNconv2 = GCNConv(64, 64)
+        self.GCNconv3 =  GCNConv(64, 64)
+        self.GCNconv4 =  GCNConv(64, self.out_features)
+ 
+    def forward(self, x, edge_index):
+        
+        x = self.GCNconv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.GCNconv2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.GCNconv3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+
+        x = self.GCNconv4(x, edge_index)
+        return x
+
+
+
 class FullyConnectNet(nn.Module):
     def __init__(self,
                 in_features,
