@@ -29,7 +29,7 @@ class VexMoutNet(nn.Module):
                 distance_func = None,
                 img_h = 768,
                 img_w = 1366,
-                gcnn_out_dim=32,
+                gcnn_out_dim=16,
                 max_sampling_size=5):
         super(VexMoutNet,self).__init__()
         self.feature_net = feature_net
@@ -50,7 +50,10 @@ class VexMoutNet(nn.Module):
             #self.gather_func = simplest_gather()
 
             #TODO define slice size in config
-            self.collapser_func = collapser_funcs.mean_channel_collapser(32,43,16)
+            #self.collapser_func = collapser_funcs.mean_channel_collapser(32,43,16)
+            #self.collapser_func = collapser_funcs.max_collapser(32,43,16)
+            self.collapser_func = collapser_funcs.mean_2d_collapser(32,43,16)
+
             self.gather_func = slice_gather(self.collapser_func)
 
 

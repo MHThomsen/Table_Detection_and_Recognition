@@ -86,6 +86,7 @@ optimizer = torch.optim.SGD(params, lr=0.001,
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=3,
                                                 gamma=0.1)
+                                                
 '''
 
 
@@ -96,8 +97,12 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
 
 
 for epoch in range(num_epochs):
+    train_loss = 0
+    val_loss = 0 
+    ct_train = 0
+    ct_val = 0
 
-    
+
     model.train()
     #load filenames of folder: 
     tfrecord_files = os.listdir(Train_path)
@@ -109,7 +114,7 @@ for epoch in range(num_epochs):
         loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
         
         for batch in loader:
-            
+            ct_train+=1
             data_dict = tfrecord_preparer(batch,device=device, batch_size=batch_size)
 
             optimizer.zero_grad()
@@ -121,6 +126,7 @@ for epoch in range(num_epochs):
             total_loss.backward()
             optimizer.step()
             #lr_scheduler.step()
+            train_loss+=total_loss.item()
 
             loop.set_description(f'Train Epoch [{epoch+1}/{num_epochs}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
@@ -138,7 +144,7 @@ for epoch in range(num_epochs):
         dataset = TFRecordDataset(tfrecord_path, config.index_path, config.tfrecord_description)
         loader = torch.utils.data.DataLoader(dataset, batch_size=validation_batch_size)
         for batch in loader:
-            
+            ct_val+=1
             data_dict = tfrecord_preparer(batch,device=device,batch_size=validation_batch_size)
             
             preds_dict = model(data_dict,device, prediction_thres)
@@ -155,7 +161,7 @@ for epoch in range(num_epochs):
             for k,v in preds_dict.items():
                 preds_dict[k] = v.to(torch.device('cpu'))
 
-
+            val_loss+=total_loss.item()
             
             stat_dict = get_stats(preds_dict['cells'],preds_dict['cols'],preds_dict['rows'],targets_cells,targets_cols,targets_rows,prediction_thres)
             
@@ -163,7 +169,7 @@ for epoch in range(num_epochs):
             #Iterate over, put tensors to device
             loop.set_description(f'Val Epoch [{epoch+1}/{num_epochs}]')
             loop.set_postfix_str(s=f"Total_loss = {round(total_loss.item(),4)}, Cells = {round(loss_cells.item(),4)}, Cols = {round(loss_cols.item(),4)}, Rows = {round(loss_rows.item(),4)}, F1_Cells = {round(stat_dict['cells']['f1'],4)}, F1_Cols = {round(stat_dict['cols']['f1'],4)}, F1_Rows = {round(stat_dict['rows']['f1'],4)}")
-    
+    print(f"#####AVERAGE: Epoch [{epoch+1}/{num_epochs}] Train Loss: {train_loss/ct_train}, Val Loss: {val_loss/ct_val}####################")
     if idx % 100 == 0:
         Stats['total_loss'].append(total_loss)
         Stats['loss_cells'].append(loss_cells)
@@ -176,6 +182,7 @@ for epoch in range(num_epochs):
 
 #GEM MODEL OGSÅ!!!
 torch.save(model.state_dict(), os.getcwd()+r'\Table_Recognition\model.pt')
+
 
 with open(os.getcwd()+r'\Table_Recognition\Stats.pickle', 'wb') as handle:
     pickle.dump(Stats, handle, protocol=pickle.HIGHEST_PROTOCOL)

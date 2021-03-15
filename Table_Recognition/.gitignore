@@ -1,0 +1,7 @@
+/Data/
+/models/
+/__pycache__/
+/tfrecords/
+/preprocess_tfrecords.ipynb
+Table_Recognition\Temp.ipynb
+*.ipynb
