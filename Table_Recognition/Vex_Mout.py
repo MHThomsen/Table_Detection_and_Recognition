@@ -24,7 +24,9 @@ class VexMoutNet(nn.Module):
     def __init__(self, 
                 feature_net = None,
                 gcnn = None,
-                classification_head = None,
+                classification_head_cells = None,
+                classification_head_rows = None,
+                classification_head_cols = None,
                 gather_func = None,
                 distance_func = None,
                 img_h = 768,
@@ -36,9 +38,9 @@ class VexMoutNet(nn.Module):
         self.gcnn = gcnn
         
         
-        self.classification_head_cells = classification_head
-        self.classification_head_rows = classification_head
-        self.classification_head_cols = classification_head
+        self.classification_head_cells = classification_head_cells
+        self.classification_head_rows = classification_head_rows
+        self.classification_head_cols = classification_head_cols
         
         self.gather_func = gather_func
         self.distance_func = distance_func

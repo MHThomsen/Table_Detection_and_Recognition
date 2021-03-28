@@ -6,15 +6,23 @@ import pickle
 
 from tfrecord.torch.dataset import TFRecordDataset
 
-from utils import get_all_targets, get_stats, tfrecord_preparer
-from feature_CNN import FeatureNet_v1
-from GCNN import SimpleNet,FullyConnectNet
-from Vex_Mout import VexMoutNet
-import config
+
 from tqdm import tqdm
-
-
 from time import process_time
+from utils import get_all_targets, get_stats, tfrecord_preparer
+
+import config
+
+
+#Imports from files
+import feature_CNN
+import GCNN
+import classification_head
+import gather
+import collapser_funcs
+import dist_funcs
+from Vex_Mout import VexMoutNet
+
 
 "Very early version of main loop. Testing imports and pipeline atm."
 
@@ -59,7 +67,44 @@ featurenet.eval()
 
 
 
-model = VexMoutNet()
+#DO NOT CHANGE
+slice_channels = 32
+slice_width = 43
+slice_height = 16
+feature_net = feature_CNN.FeatureNet_v1()
+
+
+#####################
+#VARIABLES
+gcnn_out_dim = 16
+max_sampling_size = 5
+
+collapser_func = collapser_funcs.mean_2d_collapser(slice_channels
+                                                    , slice_width
+                                                    , slice_height)
+gather_func = gather.slice_gather(collapser_func)
+
+gcnn = GCNN.SimpleGravNet(gather_func.out_dim, gcnn_out_dim)
+#####################
+
+
+#Constants - do not change
+distance_func = dist_funcs.abs_dist
+classification_head_cells = classification_head.head_v1(gcnn_out_dim)
+classification_head_rows = classification_head.head_v1(gcnn_out_dim)
+classification_head_cols = classification_head.head_v1(gcnn_out_dim)
+
+
+model = VexMoutNet(feature_net = feature_net
+                    ,gcnn = gcnn
+                    ,classification_head_cells = classification_head_cells
+                    ,classification_head_rows = classification_head_rows
+                    ,classification_head_cols = classification_head_cols
+                    ,gather_func = gather_func
+                    ,distance_func = distance_func
+                    ,gcnn_out_dim = gcnn_out_dim
+                    ,max_sampling_size = max_sampling_size)
+
 
 
 # move model to the right device
