@@ -53,7 +53,7 @@ prediction_thres = 0.5
 
 #load Feature CNN model
 featurenet_path = os.getcwd()+r"\Table_Recognition\models\FeatureNet_v1.pt"
-featurenet = FeatureNet_v1()
+featurenet = feature_CNN.FeatureNet_v1()
 featurenet.load_state_dict(torch.load(featurenet_path,map_location=torch.device('cpu')))
 featurenet.eval()
 
@@ -71,7 +71,7 @@ featurenet.eval()
 slice_channels = 32
 slice_width = 43
 slice_height = 16
-feature_net = feature_CNN.FeatureNet_v1()
+
 
 
 #####################
@@ -84,7 +84,7 @@ collapser_func = collapser_funcs.mean_2d_collapser(slice_channels
                                                     , slice_height)
 gather_func = gather.slice_gather(collapser_func)
 
-gcnn = GCNN.SimpleGravNet(gather_func.out_dim, gcnn_out_dim)
+gcnn = GCNN.SimpleNet(gather_func.out_dim, gcnn_out_dim)
 #####################
 
 
@@ -95,13 +95,13 @@ classification_head_rows = classification_head.head_v1(gcnn_out_dim)
 classification_head_cols = classification_head.head_v1(gcnn_out_dim)
 
 
-model = VexMoutNet(feature_net = feature_net
+model = VexMoutNet(feature_net = featurenet
                     ,gcnn = gcnn
                     ,classification_head_cells = classification_head_cells
                     ,classification_head_rows = classification_head_rows
                     ,classification_head_cols = classification_head_cols
                     ,gather_func = gather_func
-                    ,distance_func = distance_func
+                    ,distance_func = distance_func 
                     ,gcnn_out_dim = gcnn_out_dim
                     ,max_sampling_size = max_sampling_size)
 
@@ -225,8 +225,9 @@ for epoch in range(num_epochs):
         Stats['f1_rows'].append(stat_dict['rows']['f1'])
 
 
+
 #GEM MODEL OGSÅ!!!
-torch.save(model.state_dict(), os.getcwd()+r'\Table_Recognition\model.pt')
+torch.save(model.state_dict(), os.getcwd()+r'\Table_Recognition\models\model.pt')
 
 
 with open(os.getcwd()+r'\Table_Recognition\Stats.pickle', 'wb') as handle:

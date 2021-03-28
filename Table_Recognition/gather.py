@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 
 #Collection of different "gather" functions, for preparing word coordinate + feature map data before
 #inputting in GCNN

@@ -203,8 +203,10 @@ class VexMoutNet(nn.Module):
         with torch.no_grad():
             #Create feature map
             
+            #feature_map = []
             if self.feature_net is not None:
-                feature_map = self.feature_net.feature_forward(data_dict['imgs'])
+                feature_map = self.feature_net.feature_forward(data_dict['imgs'][0])
+
             else:
                 feature_map = [None]*batch_size    
             #Gather function:

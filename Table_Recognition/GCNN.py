@@ -1,6 +1,7 @@
+import torch
 from torch import nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, GravNetConv
 
 
 class SimpleNet(nn.Module):
@@ -74,7 +75,7 @@ class SimpleGravNet(nn.Module):
                               + self.GravNetconv3.out_channels + self.GravNetconv4.out_channels, self.out_features )
         
  
-    def forward(self, x):
+    def forward(self, x, __):
         
         x1 = self.GravNetconv1(x)
         #x = F.relu(x)
