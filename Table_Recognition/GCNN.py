@@ -57,6 +57,38 @@ class SimpleNetDeep(nn.Module):
         return x
 
 
+class SimpleGravNet(nn.Module):
+
+    def __init__(self,
+                in_features,
+                out_features):
+        super(SimpleGravNet, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        
+        self.GravNetconv1 = GravNetConv(self.in_features, 36, 4, 22, 40)
+        self.GravNetconv2 = GravNetConv(36, 36, 4, 22, 40)
+        self.GravNetconv3 = GravNetConv(36, 48, 4, 22, 40)
+        self.GravNetconv4 = GravNetConv(48, 48, 4, 22, 40)
+        self.Lout = nn.Linear(self.GravNetconv1.out_channels + self.GravNetconv2.out_channels
+                              + self.GravNetconv3.out_channels + self.GravNetconv4.out_channels, self.out_features )
+        
+ 
+    def forward(self, x):
+        
+        x1 = self.GravNetconv1(x)
+        #x = F.relu(x)
+        #x = F.dropout(x, training=self.training)
+        x2 = self.GravNetconv2(x1)
+        
+        x3 = self.GravNetconv3(x2)
+        #x = F.relu(x)
+        #x = F.dropout(x, training=self.training)
+        x4 = self.GravNetconv4(x3)
+                
+        return F.relu(self.Lout(torch.cat([x1,x2,x3,x4], dim=1)))
+
+
 
 class FullyConnectNet(nn.Module):
     def __init__(self,
