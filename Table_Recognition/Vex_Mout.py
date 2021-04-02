@@ -29,6 +29,7 @@ class VexMoutNet(nn.Module):
                 classification_head_cols = None,
                 gather_func = None,
                 distance_func = None,
+                sampling_method = None,
                 img_h = 768,
                 img_w = 1366,
                 gcnn_out_dim=16,
@@ -36,7 +37,8 @@ class VexMoutNet(nn.Module):
         super(VexMoutNet,self).__init__()
         self.feature_net = feature_net
         self.gcnn = gcnn
-        
+
+        self.sampling_method = sampling_method
         
         self.classification_head_cells = classification_head_cells
         self.classification_head_rows = classification_head_rows
@@ -82,6 +84,12 @@ class VexMoutNet(nn.Module):
             self.classification_head_rows = head_v1(input_shape=gcnn_out_dim)
             self.classification_head_cols = head_v1(input_shape=gcnn_out_dim)
 
+        if self.sampling_method=='monte_carlo_sampling':
+            self.sampling = self.monte_carlo_sampling
+        elif self.sampling_method == 'even_sampling':
+            self.sampling = self.even_sampling
+        else:
+            self.sampling = self.monte_carlo_sampling
 
 
     def head_loss(self,predicted_logits,targets,pos_weight):
@@ -174,6 +182,36 @@ class VexMoutNet(nn.Module):
         
         
         return torch.tensor(list(pairs)),npos,nneg
+    
+    def monte_carlo_sampling(self,num_words, matrix, max_samps=5):
+
+        matrix = matrix[:num_words,:num_words].cpu().numpy()
+        pairs = set()
+        npos, nneg = 0,0
+
+
+        for i in range(num_words*max_samps):
+            a, b = np.random.randint(0,num_words), np.random.randint(0,num_words)
+
+            if a == b:
+                continue
+            
+            pairs.add((a,b))
+
+            if matrix[a,b]==1:
+                npos+=1
+            else:
+                nneg+=1
+        
+        return torch.tensor(list(pairs)),npos,nneg
+
+
+
+
+
+
+        
+
 
 
 
@@ -247,19 +285,19 @@ class VexMoutNet(nn.Module):
 
             for idx,nw in enumerate(data_dict['num_words']):
                 
-                cells_sample,cells_pos,cells_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cells'][idx])
+                cells_sample,cells_pos,cells_neg = self.sampling(nw,data_dict['adjacency_matrix_cells'][idx])
                 cells_tgt.append(self.get_sample_targets(cells_sample,data_dict['adjacency_matrix_cells'][idx]))   
                 cells_feat.append(self.get_sample_features(cells_sample,graph_features[idx],self.distance_func))
                 cells_p+=cells_pos
                 cells_n+=cells_neg
                 
-                cols_sample,cols_pos,cols_neg = self.even_sampling(nw,data_dict['adjacency_matrix_cols'][idx])
+                cols_sample,cols_pos,cols_neg = self.sampling(nw,data_dict['adjacency_matrix_cols'][idx])
                 cols_tgt.append(self.get_sample_targets(cols_sample,data_dict['adjacency_matrix_cols'][idx]))
                 cols_feat.append(self.get_sample_features(cols_sample,graph_features[idx],self.distance_func))
                 cols_p+=cols_pos
                 cols_n+=cols_neg
                 
-                rows_sample,rows_pos,rows_neg = self.even_sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
+                rows_sample,rows_pos,rows_neg = self.sampling(nw,data_dict['adjacency_matrix_rows'][idx])    
                 rows_tgt.append(self.get_sample_targets(rows_sample,data_dict['adjacency_matrix_rows'][idx]))
                 rows_feat.append(self.get_sample_features(rows_sample,graph_features[idx],self.distance_func))
                 rows_p+=rows_pos

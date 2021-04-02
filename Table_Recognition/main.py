@@ -42,7 +42,7 @@ batch_size = 16
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-num_epochs = 20
+num_epochs = 30
 
 prediction_thres = 0.5
 
@@ -85,6 +85,8 @@ collapser_func = collapser_funcs.mean_2d_collapser(slice_channels
 gather_func = gather.slice_gather(collapser_func)
 
 gcnn = GCNN.SimpleNet(gather_func.out_dim, gcnn_out_dim)
+
+sampling_method = 'monte_carlo_sampling'
 #####################
 
 
@@ -101,7 +103,8 @@ model = VexMoutNet(feature_net = featurenet
                     ,classification_head_rows = classification_head_rows
                     ,classification_head_cols = classification_head_cols
                     ,gather_func = gather_func
-                    ,distance_func = distance_func 
+                    ,distance_func = distance_func
+                    ,sampling_method=sampling_method 
                     ,gcnn_out_dim = gcnn_out_dim
                     ,max_sampling_size = max_sampling_size)
 

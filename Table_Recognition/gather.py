@@ -74,5 +74,3 @@ class slice_gather():
 
 
     
-
-'''        collapsus = collapser_function(channels,width,height) '''
