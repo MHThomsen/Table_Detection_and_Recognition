@@ -109,6 +109,11 @@ class FullyConnectNet(nn.Module):
         x = F.elu(self.l2(x))
         x = F.dropout(x,0.3)
         x = F.elu(self.l3(x))
-        x = F.elu(self.lout(x))
+        
+
+
+
+
+        
 
         return x

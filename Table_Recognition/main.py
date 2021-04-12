@@ -79,7 +79,7 @@ slice_height = 16
 gcnn_out_dim = 16
 max_sampling_size = 5
 
-collapser_func = collapser_funcs.mean_2d_collapser(slice_channels
+collapser_func = collapser_funcs.mean_channel_collapser(slice_channels
                                                     , slice_width
                                                     , slice_height)
 gather_func = gather.slice_gather(collapser_func)

@@ -69,6 +69,8 @@ class slice_gather():
             slice_3d = feature_map[:,x_slice[0]:x_slice[1],y_slice[0]:y_slice[1]]
 
             slice_collapsed = self.collapser_func.collapse(slice_3d)
+
+
             image_feats.append(torch.cat((word[:4], slice_collapsed)))
         return torch.stack(image_feats,dim=0)
 
